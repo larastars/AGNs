@@ -1,11 +1,18 @@
 
 import csv 
-from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import RFE
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
 from scipy import stats
+from keras.utils import to_categorical
+import tensorflow as tf
+from keras.wrappers.scikit_learn import KerasClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import warnings
+warnings.filterwarnings('always') 
+warnings.filterwarnings('ignore')
 
 
 #find the transpose of a matrix 
@@ -22,19 +29,23 @@ def matrixTranspose(matrix):
             return result
         
     
-def neural_network(training, target):
+def neural_network():
     print('run')
+    tf.logging.set_verbosity(tf.logging.ERROR)
+    
     # Initialize the constructor
     model = Sequential()
 
     # Add an input layer 
-    model.add(Dense(12, activation='relu', input_shape=(55,)))
+    #model.add(Dense(12, activation='relu', input_shape=(55,)))
+    model.add(Dense(50,activation='relu', input_shape=(55,)))
+
 
     # Add one hidden layer 
-    model.add(Dense(8, activation='relu'))
+    model.add(Dense(25, activation='relu'))
 
     # Add an output layer 
-    model.add(Dense(1, activation='sigmoid'))
+    model.add(Dense(14, activation='sigmoid'))
     
     #Model Summary 
     #Model output shape
@@ -50,50 +61,73 @@ def neural_network(training, target):
     #model.get_weights()
     
     #compile and fit model
-    model.compile(loss='binary_crossentropy', optimizer='adam',metrics=['accuracy'])
-    model.fit(training, target, epochs=20, batch_size=1, verbose=1)
+    model.compile(loss='categorical_crossentropy', optimizer='adam',metrics=['accuracy'])
+    
+    #target = list(dict.fromkeys(target))
+    #print(target)
+    #print(np.array(target))
+    #target = to_categorical(target)
+   # k_model = KerasClassifier(build_fn=model, epochs=3, batch_size=5, verbose=0)
+    
+   # model.fit(np.array(training), np.array(target), epochs=3, batch_size=5, verbose=0)    
     print('done')
+    return model 
 
 def cross_validation(k,training,target):
     fold = 100/k
     fold = fold/100
     
+    seed = 7
+    np.random.seed(seed)
+    
+   # model = neural_network(training,target)
+    k_model = KerasClassifier(build_fn=neural_network, epochs=500, batch_size=5, verbose=0)
     #split
-    x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
+    x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=seed)
+    k_model.fit(np.array(training),np.array(target))
     
+    #model = neural_network(training, target)
     #logistic regression 
-    model = LogisticRegression()
-    rfe = RFE(model,k)
+    #model = LogisticRegression()
+    #rfe = RFE(estimator=k_model,n_features_to_select=k, step=1)
     
-    fit = rfe.fit(x_train, y_train)
+   # rfe.fit(np.array(x_train),np.array(y_train))
     
     #test
-    y_score = rfe.predict(x_test)
+    y_score = k_model.predict(np.array(x_test))
+   # y_score = rfe.predict(x_test)
+    y_score = ['%.2f' % score for score in y_score]
+    y_test = ['%.2f' % test for test in y_test]
+
+   # print(y_test)
+   # print(y_score)
     print('scores:')
     print ('accuracy: ', round (accuracy_score(y_test, y_score),3)*100, '%')
-    print ('precision: ', round (precision_score(y_test, y_score, average='weighted'),3)*100)
-    print ('recall: ', round (recall_score(y_test, y_score, average='weighted'),3)*100)
-    print ('f1 score: ', round (f1_score(y_test, y_score, average='weighted'),3)*100)
-    print(' ')
+   # print ('precision: ', round (precision_score(y_test, y_score, average='weighted'),3)*100)
+   # print ('recall: ', round (recall_score(y_test, y_score, average='weighted'),3)*100)
+   # print ('f1 score: ', round (f1_score(y_test, y_score, average='weighted'),3)*100)
+   # print(' ')
    
 
-#features to use
-k = 10
 ############################# READ TRAINING DATA #############################
 training = []
 #read target of training data 
 target = []
-file_reader = open('RatiosGrid_test3.csv', "r", encoding= "ascii")
+utarget= []
+file_reader = open('RatiosGrid_test3.csv', "r")
 read = csv.reader(file_reader)
 for row in read:
     #separate training and target
-    target.append(row[:1])
-    training.append(row[3:])
-
+    if(row[:1] != '' and row[3:][0] != ''):
+        utarget.append(row[1:2])
+        target.append(row[:1])
+        training.append(row[3:])
 #remove the labelling row 
 [names] = training[:1]
 training = training[1:]
-target = target[1:]         
+
+target = target[1:] 
+utarget = utarget[1:]    
 
 
 ############################# PREPROCESS DATA #############################
@@ -109,9 +143,17 @@ for i in range(len(training)):
             training[i][j] = float(1)
    
  
+for i in range(len(utarget)):
+    utarget[i] = utarget[i][0]
+    
 for i in range(len(target)):
     target[i] = target[i][0]
+    
 
+for i in range(len(target)):
+    target[i] = float(target[i])
+     
+"""
 
 #normalize data using zscores
 #round the number to 3 decimal place
@@ -130,31 +172,7 @@ for i in trans:
 
 training2 = matrixTranspose(newTraining)
 
-
-############################# TRAIN THE DATA #############################
-#Feature Extraction 
-#model = LogisticRegression()
-#rfe = RFE(model,k)
-
-#fit = rfe.fit(training, target)
-
-
-#print result 
 """
-pair = []
-for i in range(len(names)):
-    pair.append([names[i], fit.ranking_[i], fit.support_[i]])
+cross_validation(5,training,target)
 
-pair = sorted(pair, key=lambda x: x[1])
-
-
-############################# PRINTING DATA #############################
-print("Num Features: %d"% fit.n_features_) 
-for i in range(len(pair)):
-    if pair[i][2] == True:
-        print(pair[i][0])
-
-"""
-#cross_validation(5,training,target)
-neural_network(training, target)
-
+#neural_network(training,target)

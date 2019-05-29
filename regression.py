@@ -86,31 +86,47 @@ def plot(training, target, names):
         #create an instance of plotting 
         fig, ax = plt.subplots()
         
-    
+        
+        ################ plot target ##################
+       
         #convert to float and string 
         trainingInst = toFloat(trainingTrans[i])
         target2 = logFunction(target)
-        #target3 = toString(target2)
-        #print(target3)
-        
-        #plt.yticks(range(len(target2)),target2)
         
         #plot 
-        ax.plot(target2, trainingInst,'o')
+        ax.plot(target2, trainingInst,'go')
         
-       # plt.xticks(rotation=90)
-       # target2 = set(target)
-        #target3 = list(target2)
 
-       # ax.set_xticks(range(len(target3)))
-       # ax.set_xticklabels(target, rotation=90)
         ax.set(ylabel= names[i],xlabel='Log(Mass of blackhole)')
         plt.title(names[i] +' vs. Log(Mass of blackhole)')
         
         ax.grid()
         plt.show()
         rcParams.update({'figure.autolayout': True})
-        fileName = 'plotstest/' +str(i+1)
+        fileName = 'plotstest/' +(names[i].replace('/',''))
+        """ 
+        ###############################################
+        
+        
+        ################ plot utarget ##################    
+        
+         #convert to float and string 
+        trainingInst = toFloat(trainingTrans[i])
+        
+        #plot 
+        ax.plot(target, trainingInst,'go')
+        
+
+        ax.set(ylabel= names[i],xlabel='Log(Mass of blackhole)')
+        plt.title(names[i] +' vs. Log(Mass of blackhole)')
+        
+        ax.grid()
+        plt.show()
+        rcParams.update({'figure.autolayout': True})
+        fileName = 'plotsutest/' +(names[i].replace('/',''))
+        """
+        ###############################################
+        
         fig.savefig(fileName)   # save the figure to file
         plt.close(fig)    # close the figure
     
@@ -187,7 +203,7 @@ def applyRegression(training, target, names):
     elementList = []
     for i in range(len(trainingTrans)):
        
-        #convert to float and string 
+        #convert to float
         trainingInst = toFloat(trainingTrans[i])
         trainingInst2 = matrixTranspose(trainingInst)
         target2 = logFunction(target)
@@ -198,6 +214,7 @@ def applyRegression(training, target, names):
         #print('Score: ', score)
         [coef] = lm.coef_
         inter = lm.intercept_ 
+        
         #print('Coefficients: %.2f' % float(coef))
         #print('Intercept: %.2f'  % float(inter))
         mse = mean_squared_error(trainingInst2, target2)
@@ -455,9 +472,12 @@ for i in trans:
 training2 = matrixTranspose(newTraining)
 
 """
-plot(training, target, names)
+print(len(training))
+print(len(training[0]))
+print(len(target))
+#plot(training, target, names)
 #print(training2)
-#list1,list2,list3,training3,names2,target = findSubset(training2, target, utarget, names)    
+list1,list2,list3,training3,names2,target = findSubset(training, target, utarget, names)    
 
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')

@@ -10,6 +10,11 @@ import csv
 from sklearn.linear_model import LogisticRegression
 from sklearn.feature_selection import RFE
 import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import warnings
+warnings.filterwarnings('always') 
+warnings.filterwarnings('ignore')
 
 
 def cross_validation(k,training,target):
@@ -27,6 +32,10 @@ def cross_validation(k,training,target):
     
     #test
     y_score = rfe.predict(x_test)
+    
+    #print(y_test)
+   # print(y_score)
+    
     print('scores:')
     print ('accuracy: ', round (accuracy_score(y_test, y_score),3)*100, '%')
     print ('precision: ', round (precision_score(y_test, y_score, average='weighted'),3)*100)
