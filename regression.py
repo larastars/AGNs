@@ -110,7 +110,7 @@ def plot(training, target, names):
         ax.grid()
         plt.show()
         rcParams.update({'figure.autolayout': True})
-        fileName = 'plots/' +str(i+1)
+        fileName = 'plotstest/' +str(i+1)
         fig.savefig(fileName)   # save the figure to file
         plt.close(fig)    # close the figure
     
@@ -426,7 +426,7 @@ for i in range(len(training)):
         try:
             training[i][j] = float(training[i][j]) 
         except:
-            training[i][j] = float(0)
+            training[i][j] = float(1)
    
  
 for i in range(len(utarget)):
@@ -435,7 +435,29 @@ for i in range(len(utarget)):
 for i in range(len(target)):
     target[i] = target[i][0]
      
-list1,list2,list3,training2,names2,target = findSubset(training, target, utarget, names)    
+"""
+
+#normalize data using zscores
+#round the number to 3 decimal place
+trans = matrixTranspose(training)
+newTraining = []
+
+for i in trans:
+    zscoreList = stats.zscore(i)
+    zscoreList2 = []
+    for j in zscoreList:
+        num = str(round(j,3))
+        num2 = float(num)
+        zscoreList2.append(num2)
+        
+    newTraining.append(zscoreList2)
+
+training2 = matrixTranspose(newTraining)
+
+"""
+plot(training, target, names)
+#print(training2)
+#list1,list2,list3,training3,names2,target = findSubset(training2, target, utarget, names)    
 
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')
@@ -443,6 +465,6 @@ list1,list2,list3,training2,names2,target = findSubset(training, target, utarget
 #createGraph(list1,list2,list3,'Si10/Si9', 'Si11/Si6')
 #createGraph(list1,list2,list3,'Mg5(5)/Mg4', 'Si10/Si9')
 
-createDataGraph(list1,list2,list3,training2,names2,target, 'Si10/Si9', 'Si11/Si6')
+#createDataGraph(list1,list2,list3,training2,names2,target, 'Si10/Si9', 'Si11/Si6')
 #createDataGraph(list1,list2,list3,MassBin1, MassBin2, MassBin3,'Mg5(5)/Mg4', 'Si10/Si9')
 

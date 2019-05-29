@@ -1,18 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Fri May 24 13:56:14 2019
-
-@author: larakamal
-"""
-
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Tue Jan 15 21:03:41 2019
-
-@author: larakamal
-"""
 
 import csv 
 from sklearn.linear_model import LogisticRegression
@@ -20,8 +5,25 @@ from sklearn.feature_selection import RFE
 import numpy as np
 from keras.models import Sequential
 from keras.layers import Dense
+from scipy import stats
 
+
+#find the transpose of a matrix 
+def matrixTranspose(matrix):
+    if not matrix: 
+        return []
+    else:
+        try:
+            return [ [ row[ i ] for row in matrix ] for i in range( len( matrix[ 0 ] ) ) ]
+        except:
+            result = []
+            for i in matrix:
+                result.append([i])
+            return result
+        
+    
 def neural_network(training, target):
+    print('run')
     # Initialize the constructor
     model = Sequential()
 
@@ -34,6 +36,23 @@ def neural_network(training, target):
     # Add an output layer 
     model.add(Dense(1, activation='sigmoid'))
     
+    #Model Summary 
+    #Model output shape
+    #model.___________
+    
+    #Model summary
+    #model.__________
+    
+    #Model config
+    #model.get_config()
+    
+    #List all weight tensors 
+    #model.get_weights()
+    
+    #compile and fit model
+    model.compile(loss='binary_crossentropy', optimizer='adam',metrics=['accuracy'])
+    model.fit(training, target, epochs=20, batch_size=1, verbose=1)
+    print('done')
 
 def cross_validation(k,training,target):
     fold = 100/k
@@ -87,12 +106,30 @@ for i in range(len(training)):
         try:
             training[i][j] = float(training[i][j]) 
         except:
-            training[i][j] = float(999)
+            training[i][j] = float(1)
    
  
 for i in range(len(target)):
     target[i] = target[i][0]
-    
+
+
+#normalize data using zscores
+#round the number to 3 decimal place
+trans = matrixTranspose(training)
+newTraining = []
+
+for i in trans:
+    zscoreList = stats.zscore(i)
+    zscoreList2 = []
+    for j in zscoreList:
+        num = str(round(j,3))
+        num2 = float(num)
+        zscoreList2.append(num2)
+        
+    newTraining.append(zscoreList2)
+
+training2 = matrixTranspose(newTraining)
+
 
 ############################# TRAIN THE DATA #############################
 #Feature Extraction 

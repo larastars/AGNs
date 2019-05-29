@@ -15,7 +15,7 @@ import numpy as np
 training = []
 #read target of training data 
 target = []
-file_reader = open('RatiosGrid_test2.csv', "r", encoding= "ascii")
+file_reader = open('RatiosGrid_test3.csv', "r", encoding= "ascii")
 read = csv.reader(file_reader)
 for row in read:
     #separate training and target
