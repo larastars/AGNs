@@ -12,12 +12,34 @@ from keras.wrappers.scikit_learn import KerasClassifier, KerasRegressor
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics.pairwise import cosine_similarity
+from scipy import spatial
 import warnings
 import math
 warnings.filterwarnings('always') 
 warnings.filterwarnings('ignore')
 
+global n 
+#cosine similarity as a feature selection method 
+def cosineSimilarity(training, names, n):
+    vectorSet = matrixTranspose(training)
+    simSet = []
+    #find pairwise cosine similarity
 
+    for i in vectorSet:
+        sum = 0
+        for j in vectorSet:
+            sim = 1 - spatial.distance.cosine(i, j)
+            sum += sim
+        simSet.append(sum)
+       
+    sortedSim, sortedNames = zip(*sorted(zip(simSet, names), reverse = True))
+    print(sortedSim)
+    #print(sortedNames)
+    sortedNames = sortedNames[:n]
+    #print(sortedNames)
+   
+    return sortedNames
 #find the transpose of a matrix 
 def matrixTranspose(matrix):
     if not matrix: 
@@ -42,7 +64,7 @@ def neural_network_regressor():
     # Add an input layer 
     #model.add(Dense(12, activation='relu', input_shape=(55,)))
     #40
-    model.add(Dense(40,activation='relu', kernel_initializer='normal', input_shape=(55,)))
+    model.add(Dense(40,activation='relu', kernel_initializer='normal', input_shape=(n,)))
 
 
     # Add one hidden layer 
@@ -104,7 +126,7 @@ def cross_validation_regressor(k,training,target):
         print(y_pred[i], y_test[i])
         
    # y_pred = [abs(pred) for pred in y_pred]
-    print(mean_squared_error(y_test, y_pred))
+    print('mse: ', mean_squared_error(y_test, y_pred))
     
     y_pred_round = nearestHalf(y_pred)
     #print(y_score_round)
@@ -218,6 +240,40 @@ def toFloat(list):
             [ans] = i
             list2.append(float(ans))
     return list2
+
+
+def removeData(training, names):
+    #if the average = first value 
+    training2 = matrixTranspose(training)
+    names2 = matrixTranspose(names)
+    
+    training3 = []
+    names3 = []
+    
+    for i in range(len(training2)):
+        avg = sum(training2[i])/ float(len(training2[i]))
+        if (avg != training2[i][0]):
+            training3.append(training2[i])
+            names3.append(names2[i])
+          
+    training4 = matrixTranspose(training3)
+    names4 = matrixTranspose(names3)
+    [names5] = names4
+   
+
+    return training4, names5
+
+
+def indpData(training, names, indpSet):
+    trainingTrans = matrixTranspose(training)
+    newTrainTrans = []
+    for i in range(len(names)):
+        if (names[i] in indpSet):
+            newTrainTrans.append(trainingTrans[i])
+            
+    newTrain = matrixTranspose(newTrainTrans)
+    return newTrain
+
 ############################# READ TRAINING DATA #############################
 training = []
 #read target of training data 
@@ -287,8 +343,16 @@ for i in trans:
 
 training2 = matrixTranspose(newTraining)
 
+#remove unnessecary data 
+training3, names2 = removeData(training2, names)
 
+#find n most indepent columns
+n = 30
+#indpSet = cosineSimilarity(training3, names2, n)
 
-cross_validation_regressor(5,training,targetlog)
+#training4 = indpData(training3, names2, indpSet)
+
+#create a new training set based on the indpSet 
+cross_validation_regressor(5,training3,targetlog)
 
 #neural_network(training,target)

@@ -86,7 +86,7 @@ def plot(training, target, names):
         #create an instance of plotting 
         fig, ax = plt.subplots()
         
-        
+        """
         ################ plot target ##################
        
         #convert to float and string 
@@ -103,7 +103,8 @@ def plot(training, target, names):
         ax.grid()
         plt.show()
         rcParams.update({'figure.autolayout': True})
-        fileName = 'plotstest/' +(names[i].replace('/',''))
+        fileName = 'plotstest/' +(names[i].replace('/','').replace('01','').replace(')',''))
+        
         """ 
         ###############################################
         
@@ -123,8 +124,8 @@ def plot(training, target, names):
         ax.grid()
         plt.show()
         rcParams.update({'figure.autolayout': True})
-        fileName = 'plotsutest/' +(names[i].replace('/',''))
-        """
+        fileName = 'plotsutest/' +(names[i].replace('/','').replace('01','').replace(')',''))
+       
         ###############################################
         
         fig.savefig(fileName)   # save the figure to file
@@ -472,12 +473,10 @@ for i in trans:
 training2 = matrixTranspose(newTraining)
 
 """
-print(len(training))
-print(len(training[0]))
-print(len(target))
-#plot(training, target, names)
+
+plot(training, utarget, names)
 #print(training2)
-list1,list2,list3,training3,names2,target = findSubset(training, target, utarget, names)    
+#list1,list2,list3,training3,names2,target = findSubset(training, target, utarget, names)    
 
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')
