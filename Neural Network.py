@@ -32,7 +32,7 @@ def matrixTranspose(matrix):
             return result
         
     
-def neural_network():
+def neural_network_regressor():
     #print('run')
     tf.logging.set_verbosity(tf.logging.ERROR)
     
@@ -41,7 +41,8 @@ def neural_network():
 
     # Add an input layer 
     #model.add(Dense(12, activation='relu', input_shape=(55,)))
-    model.add(Dense(50,activation='relu', kernel_initializer='normal', input_shape=(55,)))
+    #40
+    model.add(Dense(40,activation='relu', kernel_initializer='normal', input_shape=(55,)))
 
 
     # Add one hidden layer 
@@ -76,7 +77,7 @@ def neural_network():
     print('done creating the model')
     return model 
 
-def cross_validation(k,training,target):
+def cross_validation_regressor(k,training,target):
     fold = 100/k
     fold = fold/100
     
@@ -85,7 +86,7 @@ def cross_validation(k,training,target):
     
     #target = to_categorical(target)
    # model = neural_network(training,target)
-    k_model = KerasRegressor(build_fn=neural_network, epochs=2000, batch_size=50, verbose=0)
+    k_model = KerasRegressor(build_fn=neural_network_regressor, epochs=15000, batch_size=30, verbose=0)
     
     #split
     x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=seed)
@@ -102,15 +103,16 @@ def cross_validation(k,training,target):
     for i in range(len(y_pred)):
         print(y_pred[i], y_test[i])
         
-        
+   # y_pred = [abs(pred) for pred in y_pred]
     print(mean_squared_error(y_test, y_pred))
     
-   # y_score_round = nearestHalf(y_score)
+    y_pred_round = nearestHalf(y_pred)
     #print(y_score_round)
     #print(y_test)
     
-    
-   # print ('accuracy: ', round (accuracy_score(y_test, y_score_round),3)*100, '%')
+    y_pred_round = ['%.2f' % score for score in y_pred_round]
+    y_test = ['%.2f' % test for test in y_test]
+    print ('accuracy: ', round (accuracy_score(y_test, y_pred_round),3)*100, '%')
    # print ('precision: ', round (precision_score(y_test, y_score, average='weighted'),3)*100)
    # print ('recall: ', round (recall_score(y_test, y_score, average='weighted'),3)*100)
    # print ('f1 score: ', round (f1_score(y_test, y_score, average='weighted'),3)*100)
@@ -137,11 +139,56 @@ def cross_validation(k,training,target):
    # print(y_score)
   #  print('scores:')
    # print ('accuracy: ', round (accuracy_score(y_test, y_score),3)*100, '%')
-   
+
+
+def neural_network_classifier():
+    #print('run')
+    tf.logging.set_verbosity(tf.logging.ERROR)
+    
+    # Initialize the constructor
+    model = Sequential()
+
+    # Add an input layer 
+    #model.add(Dense(12, activation='relu', input_shape=(55,)))
+    model.add(Dense(50,activation='relu', kernel_initializer='normal', input_shape=(55,)))
+
+
+    # Add one hidden layer 
+    model.add(Dense(5, activation='relu'))
+
+    # Add an output layer 
+    model.add(Dense(14, kernel_initializer='normal'))
+    
+    #Model Summary 
+    #Model output shape
+    #model.___________
+    
+    #Model summary
+    #model.__________
+    
+    #Model config
+    #model.get_config()
+    
+    #List all weight tensors 
+    #model.get_weights()
+    
+    #compile and fit model
+    model.compile(loss='categorical_entropy', optimizer='adam',metrics=['accuracy'])
+    
+    #target = list(dict.fromkeys(target))
+    #print(target)
+    #print(np.array(target))
+    #target = to_categorical(target)
+   # k_model = KerasClassifier(build_fn=model, epochs=3, batch_size=5, verbose=0)
+    
+   # model.fit(np.array(training), np.array(target), epochs=3, batch_size=5, verbose=0)    
+    print('done creating the model')
+    return model 
+
 def nearestHalf(list):
     list2 = []
     for i in list:
-        num = round(i * 2) / 2
+        num = abs(round(i * 2) / 2)
         if (num > 8.5):
             list2.append(8.5)
         else:
@@ -202,7 +249,7 @@ for i in range(len(training)):
         try:
             training[i][j] = float(training[i][j]) 
         except:
-            training[i][j] = float(1)
+            training[i][j] = 0
    
  
 for i in range(len(utarget)):
@@ -230,7 +277,7 @@ for i in trans:
         num = str(round(j,3))
        # print(num)
         if (num == 'nan'):
-            num2 =
+            num2 =0
             zscoreList2.append(num2)
         else:
             num2 = float(num) 
@@ -242,6 +289,6 @@ training2 = matrixTranspose(newTraining)
 
 
 
-#cross_validation(5,training,targetlog)
+cross_validation_regressor(5,training,targetlog)
 
 #neural_network(training,target)
