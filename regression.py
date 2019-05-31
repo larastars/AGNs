@@ -118,8 +118,8 @@ def plot(training, target, names):
         ax.plot(target, trainingInst,'go')
         
 
-        ax.set(ylabel= names[i],xlabel='Log(Mass of blackhole)')
-        plt.title(names[i] +' vs. Log(Mass of blackhole)')
+        ax.set(ylabel= names[i],xlabel='Ionization Parameters')
+        plt.title(names[i] +' vs. Ionization Parameters')
         
         ax.grid()
         plt.show()

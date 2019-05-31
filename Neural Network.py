@@ -13,7 +13,10 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_selection import mutual_info_regression
 from scipy import spatial
+from scipy import stats
+from matplotlib import pyplot as plt
 import warnings
 import math
 warnings.filterwarnings('always') 
@@ -35,9 +38,7 @@ def cosineSimilarity(training, names, n):
        
     sortedSim, sortedNames = zip(*sorted(zip(simSet, names), reverse = True))
     print(sortedSim)
-    #print(sortedNames)
     sortedNames = sortedNames[:n]
-    #print(sortedNames)
    
     return sortedNames
 #find the transpose of a matrix 
@@ -55,112 +56,86 @@ def matrixTranspose(matrix):
         
     
 def neural_network_regressor():
-    #print('run')
+
+    print('Building the model')
     tf.logging.set_verbosity(tf.logging.ERROR)
     
     # Initialize the constructor
     model = Sequential()
 
     # Add an input layer 
-    #model.add(Dense(12, activation='relu', input_shape=(55,)))
-    #40
     model.add(Dense(40,activation='relu', kernel_initializer='normal', input_shape=(n,)))
 
 
     # Add one hidden layer 
-    #model.add(Dense(5, activation='relu'))
-
+    model.add(Dense(15, activation='tanh'))
+    
     # Add an output layer 
     model.add(Dense(1, kernel_initializer='normal'))
     
-    #Model Summary 
-    #Model output shape
-    #model.___________
-    
-    #Model summary
-    #model.__________
-    
-    #Model config
-    #model.get_config()
     
     #List all weight tensors 
     #model.get_weights()
     
     #compile and fit model
     model.compile(loss='mse', optimizer='adam',metrics=['accuracy'])
+    print('Done building the model')
     
-    #target = list(dict.fromkeys(target))
-    #print(target)
-    #print(np.array(target))
-    #target = to_categorical(target)
-   # k_model = KerasClassifier(build_fn=model, epochs=3, batch_size=5, verbose=0)
-    
-   # model.fit(np.array(training), np.array(target), epochs=3, batch_size=5, verbose=0)    
-    print('done creating the model')
     return model 
 
 def cross_validation_regressor(k,training,target):
+    #folds 
     fold = 100/k
     fold = fold/100
     
     seed = 7
     np.random.seed(seed)
     
-    #target = to_categorical(target)
-   # model = neural_network(training,target)
+    print('building the regressor')
+    #build a regressor
     k_model = KerasRegressor(build_fn=neural_network_regressor, epochs=15000, batch_size=30, verbose=0)
-    
-    #split
+    mse = 0
+    accuracy = 0
+    #for i in range(k):
+        #split
     x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=seed)
-    
-    #kfold = KFold(n_splits=10, random_state=seed)
-    #results = cross_val_score(k_model, np.array(x_train), np.array(y_train), cv=kfold)
-   # print("Results: %.2f (%.2f) MSE" % (results.mean(), results.std()))
-
-    k_model.fit(np.array(x_train), np.array(y_train))
-    print('done fitting the model')
-    
-    y_pred = k_model.predict(np.array(x_test))
-    
-    for i in range(len(y_pred)):
-        print(y_pred[i], y_test[i])
         
-   # y_pred = [abs(pred) for pred in y_pred]
-    print('mse: ', mean_squared_error(y_test, y_pred))
+    #plot
+    #learning_curve(np.array(x_train), np.array(y_train), np.array(x_test), np.array(y_test), neural_network())
     
+    print('fitting the regressor')
+    #fit the model 
+    k_model.fit(np.array(x_train), np.array(y_train))
+
+    #make a prediction 
+    y_pred = k_model.predict(np.array(x_test))
+        
+    
+    #print comparision
+    for i in range(len(y_pred)):
+        print(round(y_pred[i],1), y_test[i])
+          
+    #print mse
+    #print('mse: ', mean_squared_error(y_test, y_pred))
+    mse += mean_squared_error(toFloat(y_test), toFloat(y_pred))
+        
+    #prepare for accuracy 
     y_pred_round = nearestHalf(y_pred)
-    #print(y_score_round)
-    #print(y_test)
-    
+        
+        
+    #change data to string values 
     y_pred_round = ['%.2f' % score for score in y_pred_round]
     y_test = ['%.2f' % test for test in y_test]
-    print ('accuracy: ', round (accuracy_score(y_test, y_pred_round),3)*100, '%')
-   # print ('precision: ', round (precision_score(y_test, y_score, average='weighted'),3)*100)
-   # print ('recall: ', round (recall_score(y_test, y_score, average='weighted'),3)*100)
-   # print ('f1 score: ', round (f1_score(y_test, y_score, average='weighted'),3)*100)
-    #print(' ')
-    
-   
-    
-   # k_model.fit(np.array(training),np.array(target))
-    
-    #model = neural_network(training, target)
-    #logistic regression 
-    #model = LogisticRegression()
-    #rfe = RFE(estimator=k_model,n_features_to_select=k, step=1)
-    
-   # rfe.fit(np.array(x_train),np.array(y_train))
-    
-    #test
- #   y_score = k_model.predict(np.array(x_test))
-   # y_score = rfe.predict(x_test)
-   # y_score = ['%.2f' % score for score in y_score]
-   # y_test = ['%.2f' % test for test in y_test]
-#
-   # print(y_test)
-   # print(y_score)
-  #  print('scores:')
-   # print ('accuracy: ', round (accuracy_score(y_test, y_score),3)*100, '%')
+        
+    accuracy += accuracy_score(y_test, y_pred_round)
+        #accuracy 
+        #print ('accuracy: ', round (accuracy_score(y_test, y_pred_round),3)*100, '%')
+    #print(i)
+        
+   # print('mse: ', (mse/k))
+   # print ('accuracy: ', round (accuracy/k,3)*100, '%')
+    print('mse: ', mse)
+   # print ('accuracy: ', round (accuracy,3)*100, '%')
 
 
 def neural_network_classifier():
@@ -172,7 +147,7 @@ def neural_network_classifier():
 
     # Add an input layer 
     #model.add(Dense(12, activation='relu', input_shape=(55,)))
-    model.add(Dense(50,activation='relu', kernel_initializer='normal', input_shape=(55,)))
+    model.add(Dense(50,activation='relu', kernel_initializer='normal', input_shape=(n,)))
 
 
     # Add one hidden layer 
@@ -195,17 +170,66 @@ def neural_network_classifier():
     #model.get_weights()
     
     #compile and fit model
-    model.compile(loss='categorical_entropy', optimizer='adam',metrics=['accuracy'])
+    model.compile(loss='categorical_crossentropy', optimizer='adam',metrics=['accuracy'])
     
     #target = list(dict.fromkeys(target))
     #print(target)
     #print(np.array(target))
     #target = to_categorical(target)
-   # k_model = KerasClassifier(build_fn=model, epochs=3, batch_size=5, verbose=0)
+    #k_model = KerasClassifier(build_fn=model, epochs=3, batch_size=5, verbose=0)
     
-   # model.fit(np.array(training), np.array(target), epochs=3, batch_size=5, verbose=0)    
+    #model.fit(np.array(training), np.array(target), epochs=3, batch_size=5, verbose=0)    
     print('done creating the model')
     return model 
+
+
+def cross_validation_classifier(k,training,target):
+    #folds 
+    fold = 100/k
+    fold = fold/100
+    
+    seed = 7
+    np.random.seed(seed)
+    
+    #build a regressor
+    k_model = KerasClassifier(build_fn=neural_network_classifier, epochs=20000, batch_size=30, verbose=0)
+    mse = 0
+    accuracy = 0
+  #  for i in range(k):
+        #split
+    x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=seed)
+        
+        #fit the model 
+    k_model.fit(np.array(x_train), np.array(y_train))
+        
+        #make a prediction 
+    y_pred = k_model.predict(np.array(x_test))
+        
+        #print comparision
+        #for i in range(len(y_pred)):
+         #   print(y_pred[i], y_test[i])
+          
+        #print mse
+        #print('mse: ', mean_squared_error(y_test, y_pred))
+    mse += mean_squared_error(y_test, y_pred)
+        
+        #prepare for accuracy 
+    y_pred_round = nearestHalf(y_pred)
+        
+        
+        #change data to string values 
+    y_pred_round = ['%.2f' % score for score in y_pred_round]
+    y_test = ['%.2f' % test for test in y_test]
+        
+    accuracy += accuracy_score(y_test, y_pred_round)
+        #accuracy 
+        #print ('accuracy: ', round (accuracy_score(y_test, y_pred_round),3)*100, '%')
+        #print(i)
+        
+    #print('mse: ', (mse/k))
+    #print ('accuracy: ', round (accuracy/k,3)*100, '%')
+    print('mse: ', mse)
+    print ('accuracy: ', round (accuracy,3)*100, '%')
 
 def nearestHalf(list):
     list2 = []
@@ -274,6 +298,80 @@ def indpData(training, names, indpSet):
     newTrain = matrixTranspose(newTrainTrans)
     return newTrain
 
+def select_k_best(trainig, target, names):
+    #We will select the features using chi square
+    test = SelectKBest(mutual_info_regression,k='all')
+    
+    #Fit the function for ranking the features by score
+    fit = test.fit(training, target)
+    
+    #Summarize scores numpy.set_printoptions(precision=3) print(fit.scores_)
+    #Apply the transformation on to dataset
+    features = fit.transform(training)
+    
+    #Summarize selected features print(features[0:5,:])
+    np.set_printoptions(precision=3) 
+    scores_list = fit.scores_
+
+    #create a list of pairs [feature, score]
+    scores_list, names2 = zip(*sorted(zip(scores_list, names), reverse= True))
+    
+    training2 = indpData(training, names, names2[:n])
+    return training2, names2[:n]
+    
+
+def boxcox(training):
+    trainingTrans = matrixTranspose(training)
+    newTrainTrans = []
+    for i in trainingTrans:
+        new = stats.boxcox(i)
+        newTrainTrans.append(new)
+    
+    return matrixTranspose(newTrainTrans)
+
+def learning_curve(train_features, train_labels, test_features, test_labels, model):
+    test_accuracy = [];
+    test_loss = [];
+    train_accuracy = [];
+    train_loss = [];
+      
+    increment = 64
+    #split data and train some of it
+    chunks_train_data = [train_features[x:x+increment] for x in range(0, len(train_features), increment)]
+    #split labels and train some of it 
+    chunks_train_labels = [train_labels[x:x+increment] for x in range(0, len(train_features), increment)]
+    
+    #from 0-5
+    for epoch in range(0, 5):
+        #from 0 to the length of chunks_train_data
+        for i, el in enumerate(chunks_train_data):
+            #print(i)
+            train_loss_and_metrics = model.train_on_batch(el, chunks_train_labels[i])
+            #print(train_loss_and_metrics)
+            train_loss.append(train_loss_and_metrics[0])
+            train_accuracy.append(train_loss_and_metrics[1])
+            test_loss_and_metrics = model.evaluate(test_features, test_labels, batch_size=128)
+            #print(test_loss_and_metrics)
+            test_loss.append(test_loss_and_metrics[0])
+            test_accuracy.append(test_loss_and_metrics[1])
+    
+    
+    fig = plt.figure()
+    ##visualize the learning curve  
+    ax1 = fig.add_subplot(211)
+    ax1.plot(train_loss)
+    ax1.plot(test_loss)
+    ax1.set_ylabel('Loss')
+    ax1.set_xlabel('Iteration')
+    ax1.legend(['training', 'testing'], loc='upper left')
+
+    ax2 = fig.add_subplot(212)
+    ax2.plot(train_accuracy)
+    ax2.plot(test_accuracy)
+    ax2.set_ylabel('Accuracy')
+    ax2.set_xlabel('Iteration')
+    ax2.legend(['training', 'testing'], loc='upper left')
+    
 ############################# READ TRAINING DATA #############################
 training = []
 #read target of training data 
@@ -347,12 +445,11 @@ training2 = matrixTranspose(newTraining)
 training3, names2 = removeData(training2, names)
 
 #find n most indepent columns
-n = 30
+n = 51
 #indpSet = cosineSimilarity(training3, names2, n)
 
 #training4 = indpData(training3, names2, indpSet)
 
-#create a new training set based on the indpSet 
 cross_validation_regressor(5,training3,targetlog)
 
 #neural_network(training,target)
