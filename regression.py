@@ -15,6 +15,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import warnings
 import math 
 from matplotlib import rcParams
+from scipy import stats
 warnings.filterwarnings('always') 
 warnings.filterwarnings('ignore')
 import time
@@ -167,11 +168,11 @@ def breakInBins(training, target, targetu):
     
     floatTarget = toFloat(target)
     for i in range(len(target)):
-        if (floatTarget[i] <= 10000.0 ):
+        if (floatTarget[i] <= 4 ):
             training1.append(training[i])
             target1.append(target[i])
             targetu1.append(targetu[i])
-        elif (floatTarget[i] > 10000.0 and floatTarget[i] <= 1000000.0):
+        elif (floatTarget[i] > 4 and floatTarget[i] <= 6):
             training2.append(training[i])
             target2.append(target[i])
             targetu2.append(targetu[i])
@@ -292,8 +293,8 @@ def getResult(MassBin, uListBin):
     return list
 
 def printToFile(list1, list2, list3):
-    
-    
+
+        
     with open('output.csv', mode='w') as file:
         outputwriter = csv.writer(file, delimiter=',')
         outputwriter.writerow(['Low Mass AGNs', 'Medium Mass AGNs','High Mass AGNs'])
@@ -317,7 +318,6 @@ def findSubset(training, target, utarget, names):
     uListBin3 = findRegression(trainingbin3, targetubin3, names2)
     
     
-    
     #[name, coef, mse]
     #mass bin: high |coef| low mse -> maximize |coef| - mse mass 
     #u bin: low |coef| low mse -> - mse u - |coef|
@@ -325,7 +325,6 @@ def findSubset(training, target, utarget, names):
     list2 = getResult(MassBin2, uListBin2)
     list3 = getResult(MassBin3, uListBin3)
     #has [name, final, mass coef, mass mse, u coef, u mse]
-    
     printToFile(list1,list2,list3) 
     return list1,list2,list3,training2, names2, target
     
@@ -444,7 +443,7 @@ for i in range(len(training)):
         try:
             training[i][j] = float(training[i][j]) 
         except:
-            training[i][j] = float(1)
+            training[i][j] = 0
    
  
 for i in range(len(utarget)):
@@ -452,8 +451,13 @@ for i in range(len(utarget)):
     
 for i in range(len(target)):
     target[i] = target[i][0]
-     
-"""
+    
+
+for i in range(len(target)):
+    target[i] = float(target[i])
+
+targetlog = logFunction(target)  
+
 
 #normalize data using zscores
 #round the number to 3 decimal place
@@ -465,25 +469,48 @@ for i in trans:
     zscoreList2 = []
     for j in zscoreList:
         num = str(round(j,3))
-        num2 = float(num)
-        zscoreList2.append(num2)
+       # print(num)
+        if (num == 'nan'):
+            num2 =0
+            zscoreList2.append(num2)
+        else:
+            num2 = float(num) 
+            zscoreList2.append(num2)
         
     newTraining.append(zscoreList2)
 
 training2 = matrixTranspose(newTraining)
 
-"""
-
-plot(training, utarget, names)
+#print(len(targetlog))
+#plot(training, utarget, names)
 #print(training2)
-#list1,list2,list3,training3,names2,target = findSubset(training, target, utarget, names)    
+list1,list2,list3,training3,names3,target2 = findSubset(training2, targetlog, utarget, names)    
 
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')
 #createGraph(list1,list2,list3,'Na4(9)/Na3', 'Na4(21)/Na3')
-#createGraph(list1,list2,list3,'Si10/Si9', 'Si11/Si6')
-#createGraph(list1,list2,list3,'Mg5(5)/Mg4', 'Si10/Si9')
 
-#createDataGraph(list1,list2,list3,training2,names2,target, 'Si10/Si9', 'Si11/Si6')
+#low mass 
+print('low mass')
+#createGraph(list1,list2,list3,'Na6(8)/Na4)', 'Na6(8)/Na4(6)')
+createGraph(list1,list2,list3,'Na6(8)/Na4(21)', 'Na6(14)/Na4(6)')
+createGraph(list1,list2,list3,'Na6(14)/Na4(21)', 'Al6(9)/Al5')
+
+#medium mass
+
+print('medium mass')
+createGraph(list1,list2,list3,'Si11/Si10', 'Si7(6)/Si6')
+createGraph(list1,list2,list3,'Fe13/Fe6(1.01)', 'Si11/Si6')
+createGraph(list1,list2,list3,'Si9/Si6', 'Al8(5)/Al6(9)')
+
+#high mass 
+print('high mass')
+createGraph(list1,list2,list3,'Si11/Si10', 'Si11/Si6')
+#createGraph(list1,list2,list3,'Si11/Si7(2)', 'Si11/Si7(6)')
+createGraph(list1,list2,list3,'Si10/Si6', 'Si9/Si6')
+
+
+
+
 #createDataGraph(list1,list2,list3,MassBin1, MassBin2, MassBin3,'Mg5(5)/Mg4', 'Si10/Si9')
 
