@@ -180,7 +180,7 @@ np.set_printoptions(precision=3)
 scores_list = fit.scores_
 
 
-#create a list of pairs [feature, score]
+a#create a list of pairs [feature, score]
 pair = []
 for i in range(len(names)):
     pair.append([names[i], scores_list[i]])

@@ -14,6 +14,9 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import warnings
 import math 
+from sklearn.feature_selection import RFE
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from matplotlib import rcParams
 from scipy import stats
 warnings.filterwarnings('always') 
@@ -199,40 +202,90 @@ def plotSingle(training, target, names, i):
      plt.show()
      rcParams.update({'figure.autolayout': True})
 
-def applyRegression(training, target, names):
+def cross_validation(k,training,target):
+    fold = 100/k
+    fold = fold/100
     
-    trainingTrans =  matrixTranspose(training)     
-    elementList = []
-    for i in range(len(trainingTrans)):
-       
-        #convert to float
-        trainingInst = toFloat(trainingTrans[i])
-        trainingInst2 = matrixTranspose(trainingInst)
-        target2 = logFunction(target)
-    
-        lm = LinearRegression()
-        lm.fit(trainingInst2, target2)
-        score = lm.score(trainingInst2, target2)
-        #print('Score: ', score)
-        [coef] = lm.coef_
-        inter = lm.intercept_ 
+    #convert training to float
+    trainingFloat = []
+    for i in training:
+        trainingFloat.append(toFloat(i))
         
-        #print('Coefficients: %.2f' % float(coef))
-        #print('Intercept: %.2f'  % float(inter))
-        mse = mean_squared_error(trainingInst2, target2)
-        #print("Mean squared error: %.2f" %mse )
-        #plotSingle(trainingInst2, target2, names, i) 
+    #split
+    x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
+    
+    #logistic regression 
+    lm = LinearRegression()
+    #lm.fit(trainingFloat,target)
+    
+    #rfe = RFE(model,k)
+   # fit = rfe.fit(x_train, y_train)
+    
+    lm.fit(x_train, y_train)
+    
+    #test
+    y_score = lm.predict(x_test)
+    
+    mse = mean_squared_error(toFloat(y_test), toFloat(y_score))
+    print(mse)
+
+    print(lm.feature_importance_)
+    
+    #print(y_test)
+   # print(y_score)
+    #y_test = ''.join(y_test)
+    #y_score = ''.join(y_score)
+    #print('scores:')
+    #print ('accuracy: ', round (accuracy_score(y_test, y_score),3)*100, '%')
+    #print ('precision: ', round (precision_score(y_test, y_score, average='weighted'),3)*100)
+    #print ('recall: ', round (recall_score(y_test, y_score, average='weighted'),3)*100)
+    #print ('f1 score: ', round (f1_score(y_test, y_score, average='weighted'),3)*100)
+    #print(' ')
+    
+    
+def applyRegression(training, target, names):
+  
+    trainingTrans =  matrixTranspose(training) 
+    trainingFloat = []
+    elementList = []
+    
+    #convert training to float
+    for i in training:
+        trainingFloat.append(toFloat(i))
+        
+    #create model and fit model 
+    lm = LinearRegression()
+    lm.fit(trainingFloat,target)
+        
+    coef = lm.coef_
+    #inter = lm.intercept_ 
+        
+    #print('Score: ', score)
+    #print('Coefficients: ', coef)
+    #print('Intercept: ', inter)
+        
+   
+    #mse = mean_squared_error(trainingFloat[0], target)
+    
+    #print("Mean squared error: %.2f" %mse )
+    #plotSingle(trainingInst2, target2, names, i) 
+    for i in range(len(names)):
         current = []
         current.append(names[i])
-        current.append(coef)
-        current.append(mse)
+        current.append(coef[i])
+        
+        #mse 
+        y_score = lm.predict(training)
+        mse = mean_squared_error(toFloat(target), toFloat(y_score))
+        #print(mse)
+        
+        #current.append(mse)
+        #current.append(mse)
         elementList.append(current)
+  
+    #[name, coef, mse]
     return elementList
 
-
-def findRegression(training, target, names):
-  
-    return applyRegression(training, target, names)
 
 def normalize(list1, list2, list3):
     #of the form [name, coef, mse]
@@ -303,30 +356,29 @@ def printToFile(list1, list2, list3):
     file.close()
     
 def findSubset(training, target, utarget, names):
-    #remove unhelpful data 
-    #when the graph is just a horizontal line 
-    training2, names2 = removeData(training, names)
-    
+   
     #break into bins
-    trainingbin1, targetbin1, targetubin1, trainingbin2, targetbin2, targetubin2, trainingbin3, targetbin3, targetubin3 = breakInBins(training2, target, utarget)
+    trainingbin1, targetbin1, targetubin1, trainingbin2, targetbin2, targetubin2, trainingbin3, targetbin3, targetubin3 = breakInBins(training, target, utarget)
     
-    MassBin1 = findRegression(trainingbin1, targetbin1, names2)
-    MassBin2 = findRegression(trainingbin2, targetbin2, names2)
-    MassBin3 = findRegression(trainingbin3, targetbin3, names2)
-    uListBin1 = findRegression(trainingbin1, targetubin1, names2)
-    uListBin2 = findRegression(trainingbin2, targetubin2, names2)
-    uListBin3 = findRegression(trainingbin3, targetubin3, names2)
+    
+    MassBin1 = applyRegression(trainingbin1, targetbin1, names2)
+    #MassBin2 = applyRegression(trainingbin2, targetbin2, names2)
+    #MassBin3 = applyRegression(trainingbin3, targetbin3, names2)
+    #uListBin1 = applyRegression(trainingbin1, targetubin1, names2)
+    #uListBin2 = applyRegression(trainingbin2, targetubin2, names2)
+    #uListBin3 = applyRegression(trainingbin3, targetubin3, names2)
     
     
     #[name, coef, mse]
     #mass bin: high |coef| low mse -> maximize |coef| - mse mass 
     #u bin: low |coef| low mse -> - mse u - |coef|
-    list1 = getResult(MassBin1, uListBin1)
-    list2 = getResult(MassBin2, uListBin2)
-    list3 = getResult(MassBin3, uListBin3)
+   # list1 = getResult(MassBin1, uListBin1)
+   # list2 = getResult(MassBin2, uListBin2)
+   # list3 = getResult(MassBin3, uListBin3)
     #has [name, final, mass coef, mass mse, u coef, u mse]
-    printToFile(list1,list2,list3) 
-    return list1,list2,list3,training2, names2, target
+   # printToFile(list1,list2,list3) 
+   #return list1,list2,list3
+    return [], [], []
     
     
 def createGraph(list1, list2, list3, x, y):
@@ -425,6 +477,7 @@ for row in read:
         utarget.append(row[1:2])
         target.append(row[:1])
         training.append(row[3:])
+        
 #remove the labelling row 
 [names] = training[:1]
 training = training[1:]
@@ -436,7 +489,7 @@ utarget = utarget[1:]
 ############################# PREPROCESS DATA #############################
 #data is stored as string rather than float so we have to conver them
 #there are some missing data so we handle that by placing 
-#999 in that spot 
+#0 in that spot 
 
 for i in range(len(training)):
     for j in range(len(training[1])):
@@ -444,18 +497,20 @@ for i in range(len(training)):
             training[i][j] = float(training[i][j]) 
         except:
             training[i][j] = 0
-   
- 
+  
+
+#transpose a lit
 for i in range(len(utarget)):
     utarget[i] = utarget[i][0]
     
 for i in range(len(target)):
     target[i] = target[i][0]
     
-
+#convert values to float 
 for i in range(len(target)):
     target[i] = float(target[i])
 
+#appy log function 
 targetlog = logFunction(target)  
 
 
@@ -481,10 +536,11 @@ for i in trans:
 
 training2 = matrixTranspose(newTraining)
 
-#print(len(targetlog))
-#plot(training, utarget, names)
-#print(training2)
-list1,list2,list3,training3,names3,target2 = findSubset(training2, targetlog, utarget, names)    
+#remove unuseful data
+training3, names2 = removeData(training2, names)
+
+cross_validation(5,training3,targetlog)
+#list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)    
 
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')
@@ -492,22 +548,22 @@ list1,list2,list3,training3,names3,target2 = findSubset(training2, targetlog, ut
 
 #low mass 
 print('low mass')
-#createGraph(list1,list2,list3,'Na6(8)/Na4)', 'Na6(8)/Na4(6)')
-createGraph(list1,list2,list3,'Na6(8)/Na4(21)', 'Na6(14)/Na4(6)')
-createGraph(list1,list2,list3,'Na6(14)/Na4(21)', 'Al6(9)/Al5')
+##createGraph(list1,list2,list3,'Na6(8)/Na4)', 'Na6(8)/Na4(6)')
+#createGraph(list1,list2,list3,'Na6(8)/Na4(21)', 'Na6(14)/Na4(6)')
+#createGraph(list1,list2,list3,'Na6(14)/Na4(21)', 'Al6(9)/Al5')
 
 #medium mass
 
 print('medium mass')
-createGraph(list1,list2,list3,'Si11/Si10', 'Si7(6)/Si6')
-createGraph(list1,list2,list3,'Fe13/Fe6(1.01)', 'Si11/Si6')
-createGraph(list1,list2,list3,'Si9/Si6', 'Al8(5)/Al6(9)')
+#createGraph(list1,list2,list3,'Si11/Si10', 'Si7(6)/Si6')
+#createGraph(list1,list2,list3,'Fe13/Fe6(1.01)', 'Si11/Si6')
+#createGraph(list1,list2,list3,'Si9/Si6', 'Al8(5)/Al6(9)')
 
 #high mass 
 print('high mass')
-createGraph(list1,list2,list3,'Si11/Si10', 'Si11/Si6')
+#createGraph(list1,list2,list3,'Si11/Si10', 'Si11/Si6')
 #createGraph(list1,list2,list3,'Si11/Si7(2)', 'Si11/Si7(6)')
-createGraph(list1,list2,list3,'Si10/Si6', 'Si9/Si6')
+#createGraph(list1,list2,list3,'Si10/Si6', 'Si9/Si6')
 
 
 
