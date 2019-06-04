@@ -267,7 +267,7 @@ def applyRegression(training, target, names):
        
        [coef] = model.coef_
        score =  model.score(x,y)
-       coefList.append(coef)
+       coefList.append(abs(coef))
        scoreList.append(score)
        
     #normalize 
@@ -326,8 +326,10 @@ def getResult(MassBin, uListBin):
             if (MassBin[i][0] == uListBin[j][0]):
                 curr = []
                 curr.append(MassBin[i][0])
-                final = abs(MassBin[i][1]) + MassBin[i][2] - abs(uListBin[j][1]) + uListBin[j][2]
-                curr.append(final)
+                #[name,coef,score]
+                final = MassBin[i][1] + MassBin[i][2] - uListBin[j][1] - uListBin[j][2]
+                
+                curr.append(round(final,2))
                 #curr.append(MassBin[i][1])
                 #curr.append(MassBin[i][2])
                 #curr.append(uListBin[i][1])
@@ -346,6 +348,17 @@ def printToFile(list1, list2, list3):
         for i in range(len(list1)):
             outputwriter.writerow([str(list1[i]), str(list2[i]),str(list3[i])])
     file.close()
+
+def contourPlot(x,y,z,xname,yname,zname):
+    plt.figure()
+    x1, y1 = np.meshgrid(x, y)
+    cp = plt.contourf(x, y, z)
+    plt.colorbar(cp)
+    plt.title(zname)
+    plt.xlabel(xname)
+    plt.ylabel(yname)
+    plt.show()
+    
     
 def findSubset(training, target, utarget, names):
    
@@ -542,25 +555,26 @@ training3, names2 = removeData(training2, names)
 #cross_validation(5,training3,targetlog)
 list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)    
 
+#contourPlot(targetlog,utarget,training2,'Log(Mass)','U',names[0])
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')
 #createGraph(list1,list2,list3,'Na4(9)/Na3', 'Na4(21)/Na3')
 
 #low mass 
 print('low mass')
-##createGraph(list1,list2,list3,'Na6(8)/Na4)', 'Na6(8)/Na4(6)')
-#createGraph(list1,list2,list3,'Na6(8)/Na4(21)', 'Na6(14)/Na4(6)')
+createGraph(list1,list2,list3,'Na6(8)/Na4', 'Si10/Si9')
+createGraph(list1,list2,list3,'Na6(8)/Na4(6)', 'Si11/Si10')
 #createGraph(list1,list2,list3,'Na6(14)/Na4(21)', 'Al6(9)/Al5')
 
 #medium mass
 
 print('medium mass')
-#createGraph(list1,list2,list3,'Si11/Si10', 'Si7(6)/Si6')
+createGraph(list1,list2,list3,'Fe13/Fe6(1.01)', 'Si9/Si6')
 #createGraph(list1,list2,list3,'Fe13/Fe6(1.01)', 'Si11/Si6')
 #createGraph(list1,list2,list3,'Si9/Si6', 'Al8(5)/Al6(9)')
 
 #high mass 
-print('high mass')
+#print('high mass')
 #createGraph(list1,list2,list3,'Si11/Si10', 'Si11/Si6')
 #createGraph(list1,list2,list3,'Si11/Si7(2)', 'Si11/Si7(6)')
 #createGraph(list1,list2,list3,'Si10/Si6', 'Si9/Si6')
