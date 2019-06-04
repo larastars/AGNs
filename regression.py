@@ -19,6 +19,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from matplotlib import rcParams
 from scipy import stats
+from sklearn import preprocessing
+
 warnings.filterwarnings('always') 
 warnings.filterwarnings('ignore')
 import time
@@ -185,22 +187,24 @@ def breakInBins(training, target, targetu):
             targetu3.append(targetu[i])
     return training1, target1, targetu1, training2, target2, targetu2, training3, target3, targetu3
 
-def plotSingle(training, target, names, i):
+def plotSingle(x,y,xname,yname):
      fig, ax = plt.subplots()
     
-    #convert to float and string 
-     trainingInst = toFloat(training)
-     #target2 = logFunction(target)
-       
-    #plot 
-     ax.plot(target, trainingInst,'o')
+     ax.plot(x, y,'o')
         
-     ax.set(ylabel= names[i],xlabel='Log(Mass of blackhole)')
-     plt.title(names[i] +' vs. Log(Mass of blackhole) ' + str(i))
+     ax.set(ylabel= yname,xlabel=xname)
+     plt.title(xname + ' vs. '+ yname)
         
      ax.grid()
      plt.show()
      rcParams.update({'figure.autolayout': True})
+     fileName = 'HighMassa/' + (yname+ ' ' +xname).replace('/','').replace('1.01','1')
+    
+     #print(fileName)
+     fig.savefig(fileName)   # save the figure to file
+     
+     plt.close(fig)    # close the figure
+    
 
 def cross_validation(k,training,target):
     fold = 100/k
@@ -227,9 +231,8 @@ def cross_validation(k,training,target):
     y_score = lm.predict(x_test)
     
     mse = mean_squared_error(toFloat(y_test), toFloat(y_score))
-    print(mse)
+    #print(mse)
 
-    print(lm.feature_importance_)
     
     #print(y_test)
    # print(y_score)
@@ -248,44 +251,33 @@ def applyRegression(training, target, names):
     trainingTrans =  matrixTranspose(training) 
     trainingFloat = []
     elementList = []
-    
-    #convert training to float
-    for i in training:
-        trainingFloat.append(toFloat(i))
-        
-    #create model and fit model 
-    lm = LinearRegression()
-    lm.fit(trainingFloat,target)
-        
-    coef = lm.coef_
-    #inter = lm.intercept_ 
-        
-    #print('Score: ', score)
-    #print('Coefficients: ', coef)
-    #print('Intercept: ', inter)
-        
-   
-    #mse = mean_squared_error(trainingFloat[0], target)
-    
-    #print("Mean squared error: %.2f" %mse )
-    #plotSingle(trainingInst2, target2, names, i) 
-    for i in range(len(names)):
-        current = []
-        current.append(names[i])
-        current.append(coef[i])
-        
-        #mse 
-        y_score = lm.predict(training)
-        mse = mean_squared_error(toFloat(target), toFloat(y_score))
-        #print(mse)
-        
-        #current.append(mse)
-        #current.append(mse)
-        elementList.append(current)
-  
-    #[name, coef, mse]
-    return elementList
+    scoreList = []
+    coefList = []
+    y = np.array(toFloat(target))
 
+    
+    for i in range(len(trainingTrans)):
+       insFloat = toFloat(trainingTrans[i])
+       x = np.array(insFloat).reshape(-1,1)
+       #print(x)
+       model = LinearRegression().fit(x,y)
+       #plotSingle(y,x,'Ionization Parameter',names[i])
+       #plotSingle(y,x,'Mass of Blackhole',names[i])
+
+       
+       [coef] = model.coef_
+       score =  model.score(x,y)
+       coefList.append(coef)
+       scoreList.append(score)
+       
+    #normalize 
+    [newCoef] = preprocessing.normalize([coefList])
+    #print(newCoef)
+    
+    for i in range(len(names)):
+        elementList.append([names[i],newCoef[i],scoreList[i]])
+        
+    return elementList
 
 def normalize(list1, list2, list3):
     #of the form [name, coef, mse]
@@ -334,15 +326,15 @@ def getResult(MassBin, uListBin):
             if (MassBin[i][0] == uListBin[j][0]):
                 curr = []
                 curr.append(MassBin[i][0])
-                final = abs(MassBin[i][1]) -MassBin[i][2] - abs(uListBin[j][1]) -uListBin[j][2]
+                final = abs(MassBin[i][1]) + MassBin[i][2] - abs(uListBin[j][1]) + uListBin[j][2]
                 curr.append(final)
                 #curr.append(MassBin[i][1])
                 #curr.append(MassBin[i][2])
                 #curr.append(uListBin[i][1])
                 #curr.append(uListBin[i][2])
-               
                 list.append(curr)
     list.sort(key=lambda x: x[1], reverse =True)
+    
     return list
 
 def printToFile(list1, list2, list3):
@@ -360,25 +352,29 @@ def findSubset(training, target, utarget, names):
     #break into bins
     trainingbin1, targetbin1, targetubin1, trainingbin2, targetbin2, targetubin2, trainingbin3, targetbin3, targetubin3 = breakInBins(training, target, utarget)
     
-    
     MassBin1 = applyRegression(trainingbin1, targetbin1, names2)
-    #MassBin2 = applyRegression(trainingbin2, targetbin2, names2)
-    #MassBin3 = applyRegression(trainingbin3, targetbin3, names2)
-    #uListBin1 = applyRegression(trainingbin1, targetubin1, names2)
-    #uListBin2 = applyRegression(trainingbin2, targetubin2, names2)
-    #uListBin3 = applyRegression(trainingbin3, targetubin3, names2)
     
+    MassBin2 = applyRegression(trainingbin2, targetbin2, names2)
+    
+    MassBin3 = applyRegression(trainingbin3, targetbin3, names2)
+    
+    
+    uListBin1 = applyRegression(trainingbin1, targetubin1, names2)
+    
+    uListBin2 = applyRegression(trainingbin2, targetubin2, names2)
+    
+    uListBin3 = applyRegression(trainingbin3, targetubin3, names2)
     
     #[name, coef, mse]
-    #mass bin: high |coef| low mse -> maximize |coef| - mse mass 
-    #u bin: low |coef| low mse -> - mse u - |coef|
-   # list1 = getResult(MassBin1, uListBin1)
-   # list2 = getResult(MassBin2, uListBin2)
-   # list3 = getResult(MassBin3, uListBin3)
+    
+    list1 = getResult(MassBin1, uListBin1)
+    list2 = getResult(MassBin2, uListBin2)
+    list3 = getResult(MassBin3, uListBin3)
     #has [name, final, mass coef, mass mse, u coef, u mse]
-   # printToFile(list1,list2,list3) 
-   #return list1,list2,list3
-    return [], [], []
+    printToFile(list1,list2,list3) 
+    return list1,list2,list3
+   
+
     
     
 def createGraph(list1, list2, list3, x, y):
@@ -518,7 +514,7 @@ targetlog = logFunction(target)
 #round the number to 3 decimal place
 trans = matrixTranspose(training)
 newTraining = []
-
+"""
 for i in trans:
     zscoreList = stats.zscore(i)
     zscoreList2 = []
@@ -533,14 +529,18 @@ for i in trans:
             zscoreList2.append(num2)
         
     newTraining.append(zscoreList2)
+"""   
+for i in trans:  
+    [item] = preprocessing.normalize([i])
+    newTraining.append(item)
 
 training2 = matrixTranspose(newTraining)
 
 #remove unuseful data
 training3, names2 = removeData(training2, names)
 
-cross_validation(5,training3,targetlog)
-#list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)    
+#cross_validation(5,training3,targetlog)
+list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)    
 
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')
