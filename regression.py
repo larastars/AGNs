@@ -320,6 +320,8 @@ def normalize(list1, list2, list3):
     return listN1, listN2, listN3
 
 def getResult(MassBin, uListBin):
+    
+    """
     list = []
     for i in range(len(MassBin)):
         for j in range(len(uListBin)):
@@ -336,19 +338,51 @@ def getResult(MassBin, uListBin):
                 #curr.append(uListBin[i][2])
                 list.append(curr)
     list.sort(key=lambda x: x[1], reverse =True)
+    """
+    final = []
+    listMass = []
+    listU = [] 
+
+    for i in MassBin:
+        listMass.append([i[0],i[1]+i[2]])    
+    listMass.sort(key=lambda x: x[1], reverse =True)
+
+    for i in uListBin:
+        listU.append([i[0],i[1]+i[2]])     
+    listU.sort(key=lambda x: x[1], reverse =True)
+
+    k = 15
+    listMass = listMass[:k]
+    listU = listU[:k]
     
-    return list
+    for i in listMass:
+       n = len(listMass) -1
+       for j in listU:
+           if (i[0] == j[0]):
+               break
+           elif (n == 0):
+               final.append(i)
+           n -=1 
+           
+    return final 
 
 def printToFile(list1, list2, list3):
-
-        
+    maxLen = max(len(list1), len(list2), len(list3))
+    list1 = pad(list1,0,maxLen)
+    list2 = pad(list2,0,maxLen) 
+    list3 = pad(list3,0,maxLen)   
+    
     with open('output.csv', mode='w') as file:
         outputwriter = csv.writer(file, delimiter=',')
         outputwriter.writerow(['Low Mass AGNs', 'Medium Mass AGNs','High Mass AGNs'])
-        for i in range(len(list1)):
+        for i in range(maxLen):
             outputwriter.writerow([str(list1[i]), str(list2[i]),str(list3[i])])
     file.close()
 
+def pad(l, content, width):
+     l.extend([content] * (width - len(l)))
+     return l
+ 
 def contourPlot(x,y,z,xname,yname,zname):
     plt.figure()
     x1, y1 = np.meshgrid(x, y)
@@ -562,14 +596,14 @@ list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)
 
 #low mass 
 print('low mass')
-createGraph(list1,list2,list3,'Na6(8)/Na4', 'Si10/Si9')
-createGraph(list1,list2,list3,'Na6(8)/Na4(6)', 'Si11/Si10')
+#createGraph(list1,list2,list3,'Na6(8)/Na4', 'Si10/Si9')
+#createGraph(list1,list2,list3,'Na6(8)/Na4(6)', 'Si11/Si10')
 #createGraph(list1,list2,list3,'Na6(14)/Na4(21)', 'Al6(9)/Al5')
 
 #medium mass
 
 print('medium mass')
-createGraph(list1,list2,list3,'Fe13/Fe6(1.01)', 'Si9/Si6')
+#createGraph(list1,list2,list3,'Fe13/Fe6(1.01)', 'Si9/Si6')
 #createGraph(list1,list2,list3,'Fe13/Fe6(1.01)', 'Si11/Si6')
 #createGraph(list1,list2,list3,'Si9/Si6', 'Al8(5)/Al6(9)')
 
