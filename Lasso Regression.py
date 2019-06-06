@@ -9,6 +9,7 @@ Created on Sat Feb 23 11:11:52 2019
 import csv 
 import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
@@ -21,7 +22,7 @@ from matplotlib import rcParams
 from scipy import stats
 from sklearn import preprocessing
 from sklearn.linear_model import Lasso
-
+import pandas as pd
 warnings.filterwarnings('always') 
 warnings.filterwarnings('ignore')
 import time
@@ -66,61 +67,6 @@ def toFloat(list):
             list2.append(float(ans))
     return list2
 
-
-#generate the plots
-def plot(training, target, names):
-    #find the transpose of training data 
-    trainingTrans =  matrixTranspose(training) 
- 
-    for i in range(len(trainingTrans)):
-        #create an instance of plotting 
-        fig, ax = plt.subplots()
-        
-        """
-        ################ plot target ##################
-       
-        #convert to float and string 
-        trainingInst = toFloat(trainingTrans[i])
-        target2 = logFunction(target)
-        
-        #plot 
-        ax.plot(target2, trainingInst,'go')
-        
-
-        ax.set(ylabel= names[i],xlabel='Log(Mass of blackhole)')
-        plt.title(names[i] +' vs. Log(Mass of blackhole)')
-        
-        ax.grid()
-        plt.show()
-        rcParams.update({'figure.autolayout': True})
-        fileName = 'plotstest/' +(names[i].replace('/','').replace('01','').replace(')',''))
-        
-        """ 
-        ###############################################
-        
-        
-        ################ plot utarget ##################    
-        
-         #convert to float and string 
-        trainingInst = toFloat(trainingTrans[i])
-        
-        #plot 
-        ax.plot(target, trainingInst,'go')
-        
-
-        ax.set(ylabel= names[i],xlabel='Ionization Parameters')
-        plt.title(names[i] +' vs. Ionization Parameters')
-        
-        ax.grid()
-        plt.show()
-        rcParams.update({'figure.autolayout': True})
-        fileName = 'plotsutest/' +(names[i].replace('/','').replace('01','').replace(')',''))
-       
-        ###############################################
-        
-        fig.savefig(fileName)   # save the figure to file
-        plt.close(fig)    # close the figure
-    
 
 def removeData(training, names):
     #if the average = first value 
@@ -202,20 +148,14 @@ def cross_validation(k,training,target):
     #split
     x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
     
-    #logistic regression 
-    lm = LinearRegression()
-    #lm.fit(trainingFloat,target)
-    
-    #rfe = RFE(model,k)
-   # fit = rfe.fit(x_train, y_train)
-    
-    lm.fit(x_train, y_train)
+    lasso = Lasso(alpha=0.000001, max_iter =7000,random_state=None,tol=0.06)
+    lasso.fit(x_train,y_train)
     
     #test
-    y_score = lm.predict(x_test)
+    y_score = lasso.predict(x_test)
     
     mse = mean_squared_error(toFloat(y_test), toFloat(y_score))
-    #print(mse)
+    print(mse)
     
 def applyRegression(training, target, names):
   
@@ -227,7 +167,7 @@ def applyRegression(training, target, names):
     for i in training:
         x.append(toFloat(i))
     
-    lasso = Lasso(alpha=0.00001)
+    lasso = Lasso(alpha=0.000001, max_iter =7000,random_state=None,tol=0.06)
     lasso.fit(x,y)
     
     weight = np.array(lasso.coef_)
@@ -256,7 +196,7 @@ def getResult(MassBin, uListBin):
         listU.append([i[0],i[1]+i[2]])     
     listU.sort(key=lambda x: x[1], reverse =True)
 
-    k = 15
+    k = 25
     listMass = listMass[:k]
     listU = listU[:k]
     
@@ -284,7 +224,7 @@ def printToFile(list1, list2, list3):
     list2 = pad(list2,0,maxLen) 
     list3 = pad(list3,0,maxLen)   
     
-    with open('output1.csv', mode='w') as file:
+    with open('output2.csv', mode='w') as file:
         outputwriter = csv.writer(file, delimiter=',')
         outputwriter.writerow(['Low Mass AGNs', 'Medium Mass AGNs','High Mass AGNs'])
         for i in range(maxLen):
@@ -329,25 +269,62 @@ def findSubset(training, target, utarget, names):
     list1 = getResult(MassBin1, uListBin1)
     list2 = getResult(MassBin2, uListBin2)
     list3 = getResult(MassBin3, uListBin3)
+    
     #has [name, final, mass coef, mass mse, u coef, u mse]
     printToFile(list1,list2,list3) 
     return list1,list2,list3
 
-
+def heatMap(x,y,z,xname,yname,zname):
+    z1 = matrixTranspose(z)
+    
+    #for z2 in z1:
+    for j in range(len(z1)):
+        i = 0
+        z3=[]
+        y2=[]
+        x2=[]
+        while(i <= len(x)-1):
+            x2.append(x[i])
+            y2.append(y[i])
+            z3.append((sum([z1[j][i],z1[j][i+1],z1[j][i+2]])/3))
+            i +=3
+      
+        matrix = list(zip(x2,y2,z3))
+        
+        #for i in range(len(x2)):
+         #   print(x2[i],y2[i],z3[i])
+    
+        table = pd.DataFrame(matrix, columns=[xname,yname,zname[j]])
+        #print(table)
+        table = table.pivot(xname,yname,zname[j])
+        
+        fig, ax = plt.subplots(figsize=(8.5,6))
+        ax = sns.heatmap(table)
+        ax.invert_yaxis()
+        ax.set_title(zname[j])
+        fileName = 'Heatmapnew/' + (zname[j]).replace('/','').replace('1.01','1')
+        #print(fileName)
+        fig.savefig(fileName)   # save the figure to file
+         
+        plt.close(fig)    # close the figure
+        
+    
 ############################# READ TRAINING DATA #############################
 training = []
 #read target of training data 
 target = []
 utarget= []
-file_reader = open('RatiosGrid_test3.csv', "r")
+file_reader = open('RatiosGrid_test4.csv', "r")
 read = csv.reader(file_reader)
 for row in read:
     #separate training and target
-    if(row[:1] != '' and row[3:][0] != ''):
+    if(row[:1] != ['']):# and row[3:][0] != ''):
         utarget.append(row[1:2])
         target.append(row[:1])
         training.append(row[3:])
         
+    
+file_reader.close()       
 #remove the labelling row 
 [names] = training[:1]
 training = training[1:]
@@ -355,7 +332,7 @@ training = training[1:]
 target = target[1:] 
 utarget = utarget[1:]    
 
-
+#print(target)
 ############################# PREPROCESS DATA #############################
 #data is stored as string rather than float so we have to conver them
 #there are some missing data so we handle that by placing 
@@ -371,11 +348,11 @@ for i in range(len(training)):
 
 #transpose a lit
 for i in range(len(utarget)):
-    utarget[i] = utarget[i][0]
+    utarget[i] = round(float(utarget[i][0]),3)
     
 for i in range(len(target)):
     target[i] = target[i][0]
-    
+
 #convert values to float 
 for i in range(len(target)):
     target[i] = float(target[i])
@@ -399,9 +376,10 @@ training2 = matrixTranspose(newTraining)
 training3, names2 = removeData(training2, names)
 
 #cross_validation(5,training3,targetlog)
-list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)    
+list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)  
 
-#contourPlot(targetlog,utarget,training2,'Log(Mass)','U',names[0])
+heatMap(targetlog,utarget,training2,'Log(Mass)','U',names)
+#cross_validation(5,training3,targetlog)
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')
 #createGraph(list1,list2,list3,'Na4(9)/Na3', 'Na4(21)/Na3')
