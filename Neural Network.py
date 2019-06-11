@@ -377,7 +377,7 @@ training = []
 #read target of training data 
 target = []
 utarget= []
-file_reader = open('RatiosGrid_test3.csv', "r")
+file_reader = open('RatiosGrid_test4.csv', "r")
 read = csv.reader(file_reader)
 for row in read:
     #separate training and target
@@ -445,7 +445,7 @@ training2 = matrixTranspose(newTraining)
 training3, names2 = removeData(training2, names)
 
 #find n most indepent columns
-n = 51
+n = len(training3[0])
 #indpSet = cosineSimilarity(training3, names2, n)
 
 #training4 = indpData(training3, names2, indpSet)

@@ -148,14 +148,14 @@ def cross_validation(k,training,target):
     #split
     x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
     
-    lasso = Lasso(alpha=0.000001, max_iter =7000,random_state=None,tol=0.06)
+    lasso = Lasso(alpha=0.000001, max_iter =46000)
     lasso.fit(x_train,y_train)
     
     #test
     y_score = lasso.predict(x_test)
     
     mse = mean_squared_error(toFloat(y_test), toFloat(y_score))
-    print(mse)
+    #print(mse)
     
 def applyRegression(training, target, names):
   
@@ -167,7 +167,7 @@ def applyRegression(training, target, names):
     for i in training:
         x.append(toFloat(i))
     
-    lasso = Lasso(alpha=0.000001, max_iter =7000,random_state=None,tol=0.06)
+    lasso = Lasso(alpha=0.000001, max_iter =46000)
     lasso.fit(x,y)
     
     weight = np.array(lasso.coef_)
@@ -220,11 +220,11 @@ def getResult(MassBin, uListBin):
 
 def printToFile(list1, list2, list3):
     maxLen = max(len(list1), len(list2), len(list3))
-    list1 = pad(list1,0,maxLen)
-    list2 = pad(list2,0,maxLen) 
-    list3 = pad(list3,0,maxLen)   
+    list1 = pad(list1,'',maxLen)
+    list2 = pad(list2,'',maxLen) 
+    list3 = pad(list3,'',maxLen)   
     
-    with open('output2.csv', mode='w') as file:
+    with open('output3.csv', mode='w') as file:
         outputwriter = csv.writer(file, delimiter=',')
         outputwriter.writerow(['Low Mass AGNs', 'Medium Mass AGNs','High Mass AGNs'])
         for i in range(maxLen):
@@ -244,10 +244,21 @@ def contourPlot(x,y,z,xname,yname,zname):
     plt.xlabel(xname)
     plt.ylabel(yname)
     plt.show()
-    
+
+def boxcox(x):
+    xt =[]
+    try:
+        xt, maxlog, interval = stats.boxcox(x, alpha=0.05)
+    except:
+        for i in range(len(x)):
+            if (x[i] == 0):
+                x[i]=0.0000000001
+                #x[i]=np.nextafter(0, 1)
+        xt, maxlog, interval = stats.boxcox(x, alpha=0.05)
+    return xt     
     
 def findSubset(training, target, utarget, names):
-   
+
     #break into bins
     trainingbin1, targetbin1, targetubin1, trainingbin2, targetbin2, targetubin2, trainingbin3, targetbin3, targetubin3 = breakInBins(training, target, utarget)
     
@@ -269,12 +280,17 @@ def findSubset(training, target, utarget, names):
     list1 = getResult(MassBin1, uListBin1)
     list2 = getResult(MassBin2, uListBin2)
     list3 = getResult(MassBin3, uListBin3)
-    
+
+    #heatMap(targetbin1,targetubin1,trainingbin1,'Log(Mass)','U',names, 'Heatmaplow')
+    #heatMap(targetbin2,targetubin2,trainingbin2,'Log(Mass)','U',names, 'Heatmapmid')
+    #heatMap(targetbin3,targetubin3,trainingbin3,'Log(Mass)','U',names, 'Heatmaphigh')
+
+
     #has [name, final, mass coef, mass mse, u coef, u mse]
     printToFile(list1,list2,list3) 
     return list1,list2,list3
 
-def heatMap(x,y,z,xname,yname,zname):
+def heatMap(x,y,z,xname,yname,zname,filename):
     z1 = matrixTranspose(z)
     
     #for z2 in z1:
@@ -297,18 +313,17 @@ def heatMap(x,y,z,xname,yname,zname):
         table = pd.DataFrame(matrix, columns=[xname,yname,zname[j]])
         #print(table)
         table = table.pivot(xname,yname,zname[j])
-        
-        fig, ax = plt.subplots(figsize=(8.5,6))
+        #8.5,6
+        fig, ax = plt.subplots(figsize=(13,3.5))
         ax = sns.heatmap(table)
         ax.invert_yaxis()
         ax.set_title(zname[j])
-        fileName = 'Heatmapnew/' + (zname[j]).replace('/','').replace('1.01','1')
+        fileName = filename + '/' + (zname[j]).replace('/','').replace('1.01','1')
         #print(fileName)
         fig.savefig(fileName)   # save the figure to file
          
         plt.close(fig)    # close the figure
-        
-    
+
 ############################# READ TRAINING DATA #############################
 training = []
 #read target of training data 
@@ -332,7 +347,6 @@ training = training[1:]
 target = target[1:] 
 utarget = utarget[1:]    
 
-#print(target)
 ############################# PREPROCESS DATA #############################
 #data is stored as string rather than float so we have to conver them
 #there are some missing data so we handle that by placing 
@@ -367,19 +381,20 @@ trans = matrixTranspose(training)
 newTraining = []
  
 for i in trans:  
-    [item] = preprocessing.normalize([i])
+    item2 = boxcox(i)
+    [item] = preprocessing.normalize([item2])
     newTraining.append(item)
+
 
 training2 = matrixTranspose(newTraining)
 
 #remove unuseful data
 training3, names2 = removeData(training2, names)
 
-#cross_validation(5,training3,targetlog)
 list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)  
 
-heatMap(targetlog,utarget,training2,'Log(Mass)','U',names)
-#cross_validation(5,training3,targetlog)
+#heatMap(targetlog,utarget,training2,'Log(Mass)','U',names,'Heatmapnew')
+cross_validation(5,training3,targetlog)
 
 #createGraph(list1,list2,list3,'S9(1)/S3(18)', 'S9(3)/S3(18)')
 #createGraph(list1,list2,list3,'Na4(9)/Na3', 'Na4(21)/Na3')
@@ -402,8 +417,6 @@ heatMap(targetlog,utarget,training2,'Log(Mass)','U',names)
 #createGraph(list1,list2,list3,'Si11/Si10', 'Si11/Si6')
 #createGraph(list1,list2,list3,'Si11/Si7(2)', 'Si11/Si7(6)')
 #createGraph(list1,list2,list3,'Si10/Si6', 'Si9/Si6')
-
-
 
 
 #createDataGraph(list1,list2,list3,MassBin1, MassBin2, MassBin3,'Mg5(5)/Mg4', 'Si10/Si9')

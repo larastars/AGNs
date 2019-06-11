@@ -231,7 +231,7 @@ def cross_validation(k,training,target):
     y_score = lm.predict(x_test)
     
     mse = mean_squared_error(toFloat(y_test), toFloat(y_score))
-    #print(mse)
+    print(mse)
 
     
     #print(y_test)
@@ -393,7 +393,7 @@ def contourPlot(x,y,z,xname,yname,zname):
     plt.ylabel(yname)
     plt.show()
     
-    
+
 def findSubset(training, target, utarget, names):
    
     #break into bins
@@ -512,7 +512,7 @@ training = []
 #read target of training data 
 target = []
 utarget= []
-file_reader = open('RatiosGrid_test3.csv', "r")
+file_reader = open('RatiosGrid_test4.csv', "r")
 read = csv.reader(file_reader)
 for row in read:
     #separate training and target
@@ -585,9 +585,8 @@ training2 = matrixTranspose(newTraining)
 
 #remove unuseful data
 training3, names2 = removeData(training2, names)
-
-#cross_validation(5,training3,targetlog)
-list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)    
+cross_validation(5,training3,targetlog)
+#list1,list2,list3  = findSubset(training3, targetlog, utarget, names2)    
 
 #contourPlot(targetlog,utarget,training2,'Log(Mass)','U',names[0])
 
