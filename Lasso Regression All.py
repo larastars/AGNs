@@ -15,13 +15,15 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 import warnings
 import math 
+from sklearn.preprocessing import PolynomialFeatures
 from sklearn.feature_selection import RFE
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from matplotlib import rcParams
 from scipy import stats
 from sklearn import preprocessing
-from sklearn.linear_model import Lasso
+from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.linear_model import Lasso, LassoCV
 import pandas as pd
 import matplotlib.patches as mpatches
 warnings.filterwarnings('always') 
@@ -149,7 +151,7 @@ def cross_validation(k,training,target):
     #split
     x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
     
-    lasso = Lasso(alpha=0.0007, max_iter =50000)
+    lasso = Lasso(alpha=0.00007, max_iter =50000)
    #0.0007
     #lasso = Lasso(alpha=0.000001, max_iter =46000)
     
@@ -271,10 +273,10 @@ def solve(training,target,model) :
     plt.close(fig)    # close the figure
 
    
+def applyPoly(training, target, names,k):
+    fold = 100/k
+    fold = fold/100
     
- 
-def applyRegression(training, target, names):
-  
     elementList = []
    
     y = np.array(toFloat(target))
@@ -283,23 +285,106 @@ def applyRegression(training, target, names):
     for i in training:
         x.append(toFloat(i))
     
-    lasso = Lasso(alpha=0.001, max_iter =46000)
+    # Alpha (regularization strength) of LASSO regression
+    lasso_eps = 0.0001
+    lasso_nalpha=20
+    lasso_iter=5000
+    # Min and max degree of polynomials features to consider
+    degree_min = 2
+    degree_max = 6
+    
+    # Test/train split
+    x_train, x_test, y_train, y_test = train_test_split(x, y, test_size= fold)
+
+    # Make a pipeline model with polynomial transformation and LASSO regression with cross-validation, run it for increasing degree of polynomial (complexity of the model)
+    for degree in range(degree_min,degree_max+1):
+        print(degree)
+        model = make_pipeline(PolynomialFeatures(degree, interaction_only=False), LassoCV(eps=lasso_eps,n_alphas=lasso_nalpha,max_iter=lasso_iter,normalize=True,cv=5))
+        print('fit')
+        model.fit(x_train,y_train)
+        print('predict')
+        test_pred = np.array(model.predict(x_test))
+        print('metric')
+        #RMSE =np.sqrt(np.sum(np.square(test_pred-y_test)))
+        mse = mean_squared_error(test_pred, y_test)
+        test_score = model.score(x_test,y_test)     
+        print("rmse = ", mse)
+        print("score = ", test_score)
+    return elementList
+ 
+def applyRegression(training, target, names):
+  
+    elementList = []
+   
+    y = np.array(toFloat(target))
+    x0 = []
+    x = []
+    
+    #convert training to float
+    for i in training:
+        x0.append(toFloat(i))
+        x.append(toFloat(i))
+    
+    x0 = matrixTranspose(x0)
+    x = matrixTranspose(x)
+    #################change x
+    for i in range(len(x0)):
+        curr = []
+        for j in range(len(x0[0])):
+            curr.append(x0[i][j]**2)   
+        x.append(curr)  
+       
+    for i in range(len(x0)):
+        curr = []
+        for j in range(len(x0[0])):
+            curr.append(x0[i][j]**3)   
+        x.append(curr)  
+   
+    for i in range(len(x0)):
+        curr = []
+        for j in range(len(x0[0])):
+            curr.append(x0[i][j]**4)   
+        x.append(curr)  
+        
+    for i in range(len(x0)):
+        curr = []
+        for j in range(len(x0[0])):
+            curr.append(x0[i][j]**5)   
+        x.append(curr)  
+    #########################
+    
+    x = matrixTranspose(x)
+   
+    lasso = Lasso(alpha=0.008, max_iter =50000)
     lasso.fit(x,y)
     
     weight = np.array(lasso.coef_)
-   
-    for i in range(len(names)):
-        elementList.append([names[i],round(weight[i],3)])
     
-    #print(np.sum(lasso.coef_ !=0))
+    names2 = []
+    for i in names:
+        names2.append(i)
+    for i in names:
+        names2.append(str(i +'*2'))
+    for i in names:
+        names2.append(str(i +'*3'))
+    for i in names:
+        names2.append(str(i +'*4'))
+    for i in names:
+        names2.append(str(i +'*5'))
+        
+    for i in range(len(weight)):
+        elementList.append([names2[i],round(weight[i],3)])
+    
+    print(np.sum(lasso.coef_ !=0))
     
      #test
     y_score = lasso.predict(x)
     
     mse = mean_squared_error(toFloat(y), toFloat(y_score))
-    #print('training error = ', mse)
+    print('training error = ', mse)
     #print(np.array(lasso.coef_))
     #[name,weight,0]
+  
     return elementList
 
     
@@ -341,11 +426,15 @@ def getResult(MassBin, uListBin):
 
 def printToFile(list1):
     
-    with open('output4.csv', mode='w') as file:
+    list2 = []
+    for i in list1:
+        if (float(i[1]) != 0):
+            list2.append(i)
+    with open('Lasso Output Mass Poly2.csv', mode='w') as file:
         outputwriter = csv.writer(file, delimiter=',')
         outputwriter.writerow(['Result'])
-        for i in range(len(list1)):
-            outputwriter.writerow([str(list1[i])])
+        for i in range(len(list2)):
+            outputwriter.writerow([str(list2[i])])
     file.close()
 
 def pad(l, content, width):
@@ -374,9 +463,10 @@ def boxcox(x):
         xt, maxlog, interval = stats.boxcox(x, alpha=0.05)
     return xt     
     
-def findSubset(training, target, utarget, names):
+def findSubset(training, target, names):
 
     list1 = applyRegression(training, target, names2)
+    #list1 = applyPoly(training, target, names2,5)
     list1.sort(key=lambda x: x[1], reverse =True)
     
    # writeEquation(list1, training[0], names)
@@ -473,12 +563,14 @@ training = []
 #read target of training data 
 target = []
 utarget= []
+ntarget= []
 file_reader = open('RatiosGrid_test4.csv', "r")
 read = csv.reader(file_reader)
 for row in read:
     #separate training and target
     if(row[:1] != ['']):# and row[3:][0] != ''):
         utarget.append(row[1:2])
+        ntarget.append(row[2:3])
         target.append(row[:1])
         training.append(row[3:])
         
@@ -490,6 +582,7 @@ training = training[1:]
 
 target = target[1:] 
 utarget = utarget[1:]    
+ntarget = ntarget[1:]  
 
 ############################# PREPROCESS DATA #############################
 #data is stored as string rather than float so we have to conver them
@@ -507,6 +600,9 @@ for i in range(len(training)):
 #transpose a lit
 for i in range(len(utarget)):
     utarget[i] = round(float(utarget[i][0]),3)
+    
+for i in range(len(ntarget)):
+    ntarget[i] = round(float(ntarget[i][0]),3)
     
 for i in range(len(target)):
     target[i] = target[i][0]
@@ -535,7 +631,7 @@ for i in training:
 #remove unuseful data
 training3, names2 = removeData(newTraining, names)
 
-list1 = findSubset(training3, targetlog, utarget, names2)  
+list1 = findSubset(training3, targetlog, names2)  
 
 
 #sort list1
@@ -544,7 +640,7 @@ list1 = findSubset(training3, targetlog, utarget, names2)
     
 #list1.sort(key=lambda x: x[1], reverse =True)
 
-training4 = matrixTranspose(training)
+#training4 = matrixTranspose(training)
 
 
 #print(list1)
@@ -569,4 +665,4 @@ training4 = matrixTranspose(training)
 
 
 
-cross_validation(5,training3,targetlog)
+#cross_validation(5,training3,targetlog)
