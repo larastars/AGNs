@@ -317,6 +317,39 @@ def applyRegression(training, target, names):
     elementList = []
    
     y = np.array(toFloat(target))
+    x = []
+    
+    #convert training to float
+    for i in training:
+        x.append(toFloat(i))
+    
+    
+    lasso = Lasso(alpha=0.003, max_iter =46000)
+    lasso.fit(x,y)
+    
+    weight = np.array(lasso.coef_)
+    
+        
+    for i in range(len(weight)):
+        elementList.append([names[i],round(weight[i],3)])
+    
+    print(np.sum(lasso.coef_ !=0))
+    inter = lasso.intercept_
+     #test
+    y_score = lasso.predict(x)
+    
+    mse = mean_squared_error(toFloat(y), toFloat(y_score))
+    print('training error = ', mse)
+    #print(np.array(lasso.coef_))
+    #[name,weight,0]
+  
+    return inter, elementList
+
+def applyRegressionPoly(training, target, names):
+  
+    elementList = []
+   
+    y = np.array(toFloat(target))
     x0 = []
     x = []
     
@@ -355,11 +388,11 @@ def applyRegression(training, target, names):
     
     x = matrixTranspose(x)
    
-    lasso = Lasso(alpha=0.008, max_iter =50000)
+    lasso = Lasso(alpha=0.0008, max_iter =46000)
     lasso.fit(x,y)
     
     weight = np.array(lasso.coef_)
-    
+    inter = lasso.intercept_
     names2 = []
     for i in names:
         names2.append(i)
@@ -385,7 +418,7 @@ def applyRegression(training, target, names):
     #print(np.array(lasso.coef_))
     #[name,weight,0]
   
-    return elementList
+    return inter, elementList
 
     
 def getResult(MassBin, uListBin):
@@ -424,18 +457,7 @@ def getResult(MassBin, uListBin):
     #print("")      
     return final 
 
-def printToFile(list1):
-    
-    list2 = []
-    for i in list1:
-        if (float(i[1]) != 0):
-            list2.append(i)
-    with open('Lasso Output Mass Poly2.csv', mode='w') as file:
-        outputwriter = csv.writer(file, delimiter=',')
-        outputwriter.writerow(['Result'])
-        for i in range(len(list2)):
-            outputwriter.writerow([str(list2[i])])
-    file.close()
+
 
 def pad(l, content, width):
      l.extend([content] * (width - len(l)))
@@ -465,13 +487,13 @@ def boxcox(x):
     
 def findSubset(training, target, names):
 
-    list1 = applyRegression(training, target, names2)
+    inter, list1 = applyRegression(training, target, names2)
     #list1 = applyPoly(training, target, names2,5)
     list1.sort(key=lambda x: x[1], reverse =True)
     
    # writeEquation(list1, training[0], names)
 
-    printToFile(list1)
+    printToFile(list1, inter)
     return list1
 
 def plotInst(x,y,xname,yname,target,filename):
@@ -557,7 +579,21 @@ def heatMap(x,y,z,xname,yname,zname,filename):
         fig.savefig(fileName)   # save the figure to file
          
         plt.close(fig)    # close the figure
-
+        
+def printToFile(list1, inter):
+    
+    list2 = []
+    for i in list1:
+        if (float(i[1]) != 0):
+            list2.append(i)
+    with open('Lasso Output U34 alpha0.003 max_iter46000.csv', mode='w') as file:
+        outputwriter = csv.writer(file, delimiter=',')
+        outputwriter.writerow(['Result'])
+        for i in range(len(list2)):
+            outputwriter.writerow([str(list2[i])])
+        out = '[intercept, ' + str(round(inter,2)) + ']'
+        outputwriter.writerow([out])
+    file.close()
 ############################# READ TRAINING DATA #############################
 training = []
 #read target of training data 
@@ -631,7 +667,19 @@ for i in training:
 #remove unuseful data
 training3, names2 = removeData(newTraining, names)
 
-list1 = findSubset(training3, targetlog, names2)  
+
+training4 = []
+targetlog2 = []
+
+for i in range(len(utarget)):
+    if (float(utarget[i]) <= -3.0):
+    #if (float(utarget[i]) <= -2.0 and float(utarget[i]) > -3.0):
+    #if(float(utarget[i]) > -2):
+        training4.append(training3[i])
+        targetlog2.append(targetlog[i])
+
+#print(len(targetlog2))
+list1 = findSubset(training4, targetlog2, names2)  
 
 
 #sort list1
