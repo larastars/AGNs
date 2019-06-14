@@ -151,20 +151,20 @@ def cross_validation(k,training,target):
     #split
     x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
     
-    lasso = Lasso(alpha=0.00007, max_iter =50000)
+    lasso = Lasso(alpha=0.003, max_iter =46000)
    #0.0007
     #lasso = Lasso(alpha=0.000001, max_iter =46000)
     
     lasso.fit(x_train,y_train)
     
 
-    solve(trainingFloat,target,lasso)
     print(np.sum(lasso.coef_ !=0))
     #test
     y_score = lasso.predict(x_test)
     
     mse = mean_squared_error(toFloat(y_test), toFloat(y_score))
-    #print('validation error = ', mse)
+    
+    print('validation error = ', mse)
     
     """
     fig, ax = plt.subplots(figsize=(8,8))
@@ -253,26 +253,74 @@ def solve(training,target,model) :
 
             plt.plot(float(target[i]), float(ans[i]), 'ro', color = 'g')
 
-      
+    #plt.ylim([1,9])
+    #plt.xlim([1,9]) 
     red_patch = mpatches.Patch(color='r', label='Low Mass AGNs')
     blue_patch = mpatches.Patch(color='b', label='Intermediate Mass AGNs')
     green_patch = mpatches.Patch(color='g', label='High Mass AGNs')
 
-    plt.legend(handles=[red_patch, blue_patch, green_patch])
+    plt.legend(handles=[red_patch, blue_patch, green_patch], loc='upper left')
     plt.xlabel('Log(Actual AGN Mass)')
     plt.ylabel('Log(Lasso Regression Prediction)')
     plt.title('Log(Actual AGN Mass) vs. Log(Lasso Regression Prediction)')
-    #ax.legend(loc='best')
+    #ax.legend(loc='upper left')
     filename = 'newplots4'
     #plt.show()   
     
-    fileName = filename + '/' + ('Log(Actual AGN Mass)').replace('/','').replace('1.01','1') +  ('Log(Lasso Regression Prediction)').replace('/','').replace('1.01','1')
+    fileName = filename + '/' + ('Log(Actual AGN Mass)').replace('/','').replace('1.01','1') +  ('Log(Lasso Regression Prediction) 0p009').replace('/','').replace('1.01','1')
         #print(fileName)
     fig.savefig(fileName)   # save the figure to file
          
     plt.close(fig)    # close the figure
 
+def solve2(x,y,target,model) :
+    coef = model.coef_
+    inter = model.intercept_
+    ans = []
+    for i in x:
+        ans.append(round(np.dot(i,coef) + inter,1))
+    
    
+   # for i in range(len(ans)):
+    #    print(ans[i], '  ', target[i])
+    mse = mean_squared_error(toFloat(y), toFloat(ans))
+    print('mse = ', mse)
+    
+    
+    fig, ax = plt.subplots(figsize=(8,8))
+
+    for i in range(len(ans)):
+        if (float(target[i]) <= 4):
+        #for color in ['r', 'b', 'g', 'k', 'm']:
+            plt.plot(float(y[i]), float(ans[i]), 'ro', color = 'r')
+        elif (float(target[i]) > 4 and float(target[i]) <= 6):  
+            plt.plot(float(y[i]), float(ans[i]),'ro', color = 'b')
+        else:
+
+            plt.plot(float(y[i]), float(ans[i]), 'ro', color = 'g')
+
+      
+    red_patch = mpatches.Patch(color='r', label='Low Mass AGNs')
+    blue_patch = mpatches.Patch(color='b', label='Intermediate Mass AGNs')
+    green_patch = mpatches.Patch(color='g', label='High Mass AGNs')
+
+    plt.ylim([-4.5,-1])
+    plt.xlim([-4.5,-1])
+
+    plt.legend(handles=[red_patch, blue_patch, green_patch])
+    plt.xlabel('Ionization Parameter')
+    plt.ylabel('Lasso Regression Ionization Parameter Prediction')
+    plt.title('Ionization Parameter vs. Lasso Regression Ionization Parameter Prediction')
+    #ax.legend(loc='best')
+    filename = 'newplots4'
+    #plt.show()   
+    
+    fileName = filename + '/' + ('Ionization Parameter').replace('/','').replace('1.01','1') +  ('Lasso Regression Ionization Parameter Prediction 0p004').replace('/','').replace('1.01','1')
+        #print(fileName)
+    fig.savefig(fileName)   # save the figure to file
+         
+    plt.close(fig)    # close the figure
+
 def applyPoly(training, target, names,k):
     fold = 100/k
     fold = fold/100
@@ -312,7 +360,8 @@ def applyPoly(training, target, names,k):
         print("score = ", test_score)
     return elementList
  
-def applyRegression(training, target, names):
+    
+def applyRegression2(training, target, utarget, names):
   
     elementList = []
    
@@ -324,7 +373,7 @@ def applyRegression(training, target, names):
         x.append(toFloat(i))
     
     
-    lasso = Lasso(alpha=0.003, max_iter =46000)
+    lasso = Lasso(alpha=0.0007, max_iter =46000)
     lasso.fit(x,y)
     
     weight = np.array(lasso.coef_)
@@ -337,7 +386,45 @@ def applyRegression(training, target, names):
     inter = lasso.intercept_
      #test
     y_score = lasso.predict(x)
+        
+    heatMapSingle(utarget,target,toFloat(y_score), 'Ionization Parameter', 'Log(Mass of AGN)', 'Lasso Predicted Log(Mass of AGN)', 'randoms')
     
+    #solve2(x,y,target,lasso)   
+    mse = mean_squared_error(toFloat(y), toFloat(y_score))
+    print('training error = ', mse)
+    #print(np.array(lasso.coef_))
+    #[name,weight,0]
+  
+    return inter, elementList
+
+
+def applyRegression(training, target, names):
+  
+    elementList = []
+   
+    y = np.array(toFloat(target))
+    x = []
+    
+    #convert training to float
+    for i in training:
+        x.append(toFloat(i))
+    
+    
+    lasso = Lasso(alpha=0.0007, max_iter =46000)
+    lasso.fit(x,y)
+    
+    weight = np.array(lasso.coef_)
+    
+        
+    for i in range(len(weight)):
+        elementList.append([names[i],round(weight[i],3)])
+    
+    print(np.sum(lasso.coef_ !=0))
+    inter = lasso.intercept_
+     #test
+    y_score = lasso.predict(x)
+  
+    #solve(x,y,lasso)   
     mse = mean_squared_error(toFloat(y), toFloat(y_score))
     print('training error = ', mse)
     #print(np.array(lasso.coef_))
@@ -388,7 +475,7 @@ def applyRegressionPoly(training, target, names):
     
     x = matrixTranspose(x)
    
-    lasso = Lasso(alpha=0.0008, max_iter =46000)
+    lasso = Lasso(alpha=0.00009, max_iter =46000)
     lasso.fit(x,y)
     
     weight = np.array(lasso.coef_)
@@ -487,7 +574,19 @@ def boxcox(x):
     
 def findSubset(training, target, names):
 
-    inter, list1 = applyRegression(training, target, names2)
+    #inter, list1 = applyRegression(training, target, names2)
+    inter, list1 = applyRegressionPoly(training, target, names2)
+    list1.sort(key=lambda x: x[1], reverse =True)
+    
+   # writeEquation(list1, training[0], names)
+
+    printToFile(list1, inter)
+    return list1
+
+
+def findSubset2(training, target, utarget, names):
+
+    inter, list1 = applyRegression2(training, target, utarget, names2)
     #list1 = applyPoly(training, target, names2,5)
     list1.sort(key=lambda x: x[1], reverse =True)
     
@@ -496,7 +595,8 @@ def findSubset(training, target, names):
     printToFile(list1, inter)
     return list1
 
-def plotInst(x,y,xname,yname,target,filename):
+
+def plotInst(x,y,xname,yname,target,title, filename):
     fig, ax = plt.subplots(figsize=(8,8))
 
     for i in range(len(target)):
@@ -512,7 +612,7 @@ def plotInst(x,y,xname,yname,target,filename):
     #plt.legend(loc='upper left')
     plt.xlabel(xname)
     plt.ylabel(yname)
-    plt.title('plot')
+    plt.title(title)
         
     
     #plt.show()   
@@ -523,18 +623,17 @@ def plotInst(x,y,xname,yname,target,filename):
          
     plt.close(fig)    # close the figure
 
-def plotInst2(x,y,xname,yname,filename):
+def plotInst2(x,y,xname,yname,title,filename):
     fig, ax = plt.subplots(figsize=(8,8))
 
     for i in range(len(x)):
         plt.plot(float(x[i]), float(y[i]), 'ro', color = 'b')
        
 
-      
     #plt.legend(loc='upper left')
     plt.xlabel(xname)
     plt.ylabel(yname)
-    plt.title('plot')
+    plt.title(title)
         
     
     #plt.show()   
@@ -547,7 +646,9 @@ def plotInst2(x,y,xname,yname,filename):
 
     
 def heatMap(x,y,z,xname,yname,zname,filename):
+    
     z1 = matrixTranspose(z)
+    
     
     #for z2 in z1:
     for j in range(len(z1)):
@@ -555,7 +656,7 @@ def heatMap(x,y,z,xname,yname,zname,filename):
         z3=[]
         y2=[]
         x2=[]
-        while(i <= len(x)-1):
+        while(i < len(x)):
             x2.append(x[i])
             y2.append(y[i])
             z3.append((sum([z1[j][i],z1[j][i+1],z1[j][i+2]])/3))
@@ -579,14 +680,65 @@ def heatMap(x,y,z,xname,yname,zname,filename):
         fig.savefig(fileName)   # save the figure to file
          
         plt.close(fig)    # close the figure
+
+
+    
+def heatMapSingle(x,y,z,xname,yname,zname,filename):
+    
+    #z1 = matrixTranspose(z)
+    #print(z1)
+   
+     
+    z3=[]
+    y2=[]
+    x2=[]
+    i = 0
+    while (i < len(z)):
+        x2.append(float(x[i]))
+        y2.append(float(y[i]))
+        z3.append((float(z[i]) + float(z[i+1]) + float(z[i+2]))/3)
+        i += 3
         
+    """
+    #for z2 in z1:
+    for j in range(len(z1)):
+        i = 0
+        z3=[]
+        y2=[]
+        x2=[]
+        while(i <= len(x)-1):
+            x2.append(x[i])
+            y2.append(y[i])
+            z3.append((sum([z1[i],z1[i+1],z1[i+2]])/3))
+            i +=3
+    """
+    
+    matrix = list(zip(x2,y2,z3))
+        
+        #for i in range(len(x2)):
+         #   print(x2[i],y2[i],z3[i])
+    
+    table = pd.DataFrame(matrix, columns=[xname,yname,zname])
+        #print(table)
+    table = table.pivot(xname,yname,zname)
+        #8.5,6
+    fig, ax = plt.subplots(figsize=(9,8))
+    ax = sns.heatmap(table)
+    ax.invert_yaxis()
+    ax.set_title(zname)
+    fileName = filename + '/' + (zname).replace('/','').replace('1.01','1')
+    #print(fileName)
+    fig.savefig(fileName)   # save the figure to file
+            
+
+ 
 def printToFile(list1, inter):
     
     list2 = []
     for i in list1:
         if (float(i[1]) != 0):
             list2.append(i)
-    with open('Lasso Output U34 alpha0.003 max_iter46000.csv', mode='w') as file:
+    with open('2223.csv', mode='w') as file:
         outputwriter = csv.writer(file, delimiter=',')
         outputwriter.writerow(['Result'])
         for i in range(len(list2)):
@@ -672,14 +824,17 @@ training4 = []
 targetlog2 = []
 
 for i in range(len(utarget)):
-    if (float(utarget[i]) <= -3.0):
+    #if (float(utarget[i]) <= -3.0):
     #if (float(utarget[i]) <= -2.0 and float(utarget[i]) > -3.0):
-    #if(float(utarget[i]) > -2):
+    if(float(utarget[i]) > -2):
         training4.append(training3[i])
         targetlog2.append(targetlog[i])
 
 #print(len(targetlog2))
-list1 = findSubset(training4, targetlog2, names2)  
+#list1 = findSubset(training3, targetlog, names2)
+
+list1 = findSubset2(training3, targetlog, utarget, names2)  
+#list1 = findSubset(training4, targetlog2, names2)  
 
 
 #sort list1
@@ -688,7 +843,7 @@ list1 = findSubset(training4, targetlog2, names2)
     
 #list1.sort(key=lambda x: x[1], reverse =True)
 
-#training4 = matrixTranspose(training)
+#raining4 = matrixTranspose(training)
 
 
 #print(list1)
@@ -708,9 +863,10 @@ list1 = findSubset(training4, targetlog2, names2)
 #for i in range(15, len(training4)):
 #    for j in range(len(training4)):
 #        plotInst(training4[i], training4[j],targetlog,names[i],names[j])
-        
-#heatMap(targetlog,utarget,training2,'Log(Mass)','U',names,'Heatmapnew')
 
+       
+#heatMap(targetlog,utarget,training,'Log(Mass)','U',names,'randoms')
 
+#plotInst2(targetlog, x, 'Log(Mass of AGN)', xname,'newplots4')
 
-#cross_validation(5,training3,targetlog)
+#cross_validation(5,training4,targetlog2)
