@@ -387,7 +387,7 @@ def applyRegression2(training, target, utarget, names):
      #test
     y_score = lasso.predict(x)
         
-    heatMapSingle(utarget,target,toFloat(y_score), 'Ionization Parameter', 'Log(Mass of AGN)', 'Lasso Predicted Log(Mass of AGN)', 'randoms')
+    #heatMapSingle(utarget,target,toFloat(y_score), 'Ionization Parameter', 'Log(Mass of AGN)', 'Lasso Predicted Log(Mass of AGN)', 'randoms')
     
     #solve2(x,y,target,lasso)   
     mse = mean_squared_error(toFloat(y), toFloat(y_score))
@@ -430,7 +430,7 @@ def applyRegression(training, target, names):
     #print(np.array(lasso.coef_))
     #[name,weight,0]
   
-    return inter, elementList
+    return inter, toFloat(y_score)
 
 def applyRegressionPoly(training, target, names):
   
@@ -574,13 +574,13 @@ def boxcox(x):
     
 def findSubset(training, target, names):
 
-    #inter, list1 = applyRegression(training, target, names2)
-    inter, list1 = applyRegressionPoly(training, target, names2)
-    list1.sort(key=lambda x: x[1], reverse =True)
+    inter, list1 = applyRegression(training, target, names2)
+    #inter, list1 = applyRegressionPoly(training, target, names2)
+    #list1.sort(key=lambda x: x[1], reverse =True)
     
    # writeEquation(list1, training[0], names)
 
-    printToFile(list1, inter)
+    #printToFile(list1, inter)
     return list1
 
 
@@ -687,43 +687,37 @@ def heatMapSingle(x,y,z,xname,yname,zname,filename):
     
     #z1 = matrixTranspose(z)
     #print(z1)
-   
-     
-    z3=[]
-    y2=[]
-    x2=[]
-    i = 0
-    while (i < len(z)):
-        x2.append(float(x[i]))
-        y2.append(float(y[i]))
-        z3.append((float(z[i]) + float(z[i+1]) + float(z[i+2]))/3)
-        i += 3
-        
-    """
-    #for z2 in z1:
-    for j in range(len(z1)):
-        i = 0
-        z3=[]
-        y2=[]
-        x2=[]
-        while(i <= len(x)-1):
-            x2.append(x[i])
-            y2.append(y[i])
-            z3.append((sum([z1[i],z1[i+1],z1[i+2]])/3))
-            i +=3
-    """
+    #z2 = []
     
-    matrix = list(zip(x2,y2,z3))
+    #z2 =list(dict.fromkeys(z))
+    #z3 = pad(z2, 0, len(x))
+    for i in range(len(y)):
+        y[i] = round(float(y[i]),2)
         
-        #for i in range(len(x2)):
-         #   print(x2[i],y2[i],z3[i])
+    for i in range(len(x)):
+        x[i] = round(float(x[i]),2)
+    
+    
+    #print(x)
+    matrix = list(zip(x,y,z))
+    
+    #for i in range(len(x)):
+     #   print(x[i], y[i], z[i])
     
     table = pd.DataFrame(matrix, columns=[xname,yname,zname])
-        #print(table)
+    table = table.drop_duplicates([xname,yname])
+
+    #print(table)
     table = table.pivot(xname,yname,zname)
         #8.5,6
-    fig, ax = plt.subplots(figsize=(9,8))
+        
+
+    #plt.xlim([1,9]) 
+    fig, ax = plt.subplots(figsize=(16,16))
+
+
     ax = sns.heatmap(table)
+
     ax.invert_yaxis()
     ax.set_title(zname)
     fileName = filename + '/' + (zname).replace('/','').replace('1.01','1')
@@ -833,7 +827,12 @@ for i in range(len(utarget)):
 #print(len(targetlog2))
 #list1 = findSubset(training3, targetlog, names2)
 
-list1 = findSubset2(training3, targetlog, utarget, names2)  
+list1 = findSubset(training3, targetlog, names2) 
+list2 = findSubset(training3, utarget, names2)
+
+heatMapSingle(list1,list2,utarget,'Lasso Predicated Log(Mass of AGN)', 'Lasso Predicted Ionization Parameter', 'Actual Ionization Parameter',  'randoms')
+#heatMapSingle(list1,list2,targetlog,'Lasso Predicated Log(Mass of AGN)', 'Lasso Predicted Ionization Parameter', 'Actual Log(Mass of AGN)',  'randoms')
+
 #list1 = findSubset(training4, targetlog2, names2)  
 
 
