@@ -139,32 +139,31 @@ def plotSingle(x,y,xname,yname):
      plt.close(fig)    # close the figure
     
 
-def cross_validation(k,training,target):
+def cross_validation(k,training,target,a):
     fold = 100/k
     fold = fold/100
-    
+    mse = 0
     #convert training to float
     trainingFloat = []
     for i in training:
         trainingFloat.append(toFloat(i))
+    for i in range(k):
+        #split
+        x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
+    
+        lasso = Lasso(alpha=a, max_iter =46000)
+        #0.0007
+        #lasso = Lasso(alpha=0.000001, max_iter =46000)
+    
+        lasso.fit(x_train,y_train)
+    
+        #test
+        y_score = lasso.predict(x_test)
+    
+        mse += mean_squared_error(toFloat(y_test), toFloat(y_score))
         
-    #split
-    x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
-    
-    lasso = Lasso(alpha=0.003, max_iter =46000)
-   #0.0007
-    #lasso = Lasso(alpha=0.000001, max_iter =46000)
-    
-    lasso.fit(x_train,y_train)
-    
-
     print(np.sum(lasso.coef_ !=0))
-    #test
-    y_score = lasso.predict(x_test)
-    
-    mse = mean_squared_error(toFloat(y_test), toFloat(y_score))
-    
-    print('validation error = ', mse)
+    print('validation error = ', mse/k)
     
     """
     fig, ax = plt.subplots(figsize=(8,8))
@@ -189,16 +188,16 @@ def cross_validation(k,training,target):
     plt.ylabel('Log(Lasso Regression Prediction)')
     plt.title('Log(Actual AGN Mass) vs. Log(Lasso Regression Prediction)')
     #ax.legend(loc='best')
-    filename = 'newplots4'
-    #plt.show()   
-    
-    fileName = filename + '/' + ('Log(Actual AGN Mass)').replace('/','').replace('1.01','1') +  ('Log(Lasso Regression Prediction) 2').replace('/','').replace('1.01','1')
-        #print(fileName)
-    fig.savefig(fileName)   # save the figure to file
-         
-    plt.close(fig)    # close the figure
-
+    #filename = 'newplots4'
+    plt.show()   
     """
+    #fileName = filename + '/' + ('Log(Actual AGN Mass)').replace('/','').replace('1.01','1') +  ('Log(Lasso Regression Prediction) 2').replace('/','').replace('1.01','1')
+        #print(fileName)
+    #fig.savefig(fileName)   # save the figure to file
+         
+   # plt.close(fig)    # close the figure
+
+  
 def writeEquation(elementList, inst, names):
     
     #remove zeros
@@ -728,9 +727,9 @@ def heatMapSingle(x,y,z,xname,yname,zname,filename):
 def scatterMap(x,y,z,xname,yname,zname,filename):
     fig, ax = plt.subplots(figsize=(10,10))
 
-    plt.title(zname)
-    plt.xlabel(xname)
-    plt.ylabel(yname)
+    plt.title(zname, fontsize=13)
+    plt.xlabel(xname, fontsize=10)
+    plt.ylabel(yname, fontsize=10)
     
     marker_size=15
     plt.scatter(x, y, marker_size, c=z)
@@ -738,10 +737,116 @@ def scatterMap(x,y,z,xname,yname,zname,filename):
     cbar.set_label(zname, labelpad=+1)
     plt.show()
     
-    fileName = filename + '/' + 'scatter ' + (zname).replace('/','').replace('1.01','1')
+    fileName = filename + '/' + 'scatter2 ' + (zname).replace('/','').replace('1.01','1')
     print(fileName)
     fig.savefig(fileName)   # save the figure to file
- 
+
+def indpData(training, names, indpSet):
+    trainingTrans = matrixTranspose(training)
+    newTrainTrans = []
+    for i in range(len(names)):
+        if (names[i] in indpSet):
+            newTrainTrans.append(trainingTrans[i])
+            
+    newTrain = matrixTranspose(newTrainTrans)
+    return newTrain
+
+
+def trainModel(training, target, names, a):
+    
+    elementList = []
+    #convert training and target to float
+    y = np.array(toFloat(target))
+    x = []
+    
+    for i in training:
+        x.append(toFloat(i))
+    
+    #create lasso regression 
+    lasso = Lasso(alpha=a, max_iter =46000)
+    lasso.fit(x,y)
+    weight = np.array(lasso.coef_)
+    
+    for i in range(len(weight)):
+        if (weight[i] != 0):
+            elementList.append([round(weight[i],2), names[i]])
+    
+    elementList.append([round(lasso.intercept_,2), ''])
+    print(elementList)
+
+    print("number of coef = ", np.sum(lasso.coef_ !=0))
+    
+    
+    y_score = lasso.predict(x)  
+    
+    mse = mean_squared_error(toFloat(y), toFloat(y_score))
+    print('training error 1 = ', mse)
+    return lasso, toFloat(y_score)
+
+def testingModel(training, target, model):
+    coef = model.coef_
+    coefList = []
+    for i in range(len(coef)):
+        if (coef[i] !=0):
+            print(names[i], coef[i])
+            coefList.append(coef[i])
+   
+    inter = model.intercept_
+    y_score = []
+    for i in training:
+        y_score.append(round(np.dot(i,coefList) + inter,1))
+    
+    #y_score = model.predict(training)
+    mse = mean_squared_error(toFloat(target), toFloat(y_score))
+    print('training error 2 = ', mse)
+    
+def transform(training, names): 
+    newTraining = []
+    for i in training:  
+        item2 = boxcox(i)
+        [item] = preprocessing.normalize([item2])
+        newTraining.append(item)
+        
+    training2, names2 = removeData(newTraining, names)
+    return training2, names2
+
+def plotactualvspredicted(actual, predicted, target, xname, yname, title): 
+    
+    
+    fig, ax = plt.subplots(figsize=(8,8))
+
+    for i in range(len(predicted)):
+        if (float(target[i]) <= 4):
+        #for color in ['r', 'b', 'g', 'k', 'm']:
+            plt.plot(float(actual[i]), float(predicted[i]), 'ro', color = 'r')
+        elif (float(target[i]) > 4 and float(target[i]) <= 6):  
+            plt.plot(float(actual[i]), float(predicted[i]),'ro', color = 'b')
+        else:
+
+            plt.plot(float(actual[i]), float(predicted[i]), 'ro', color = 'g')
+
+      
+    red_patch = mpatches.Patch(color='r', label='Low Mass AGNs')
+    blue_patch = mpatches.Patch(color='b', label='Intermediate Mass AGNs')
+    green_patch = mpatches.Patch(color='g', label='High Mass AGNs')
+
+    if (float(actual[0]) > 0):
+        plt.ylim([1,9])
+        plt.xlim([1,9]) 
+    else:
+        plt.ylim([-4,-1])
+        plt.xlim([-4,-1]) 
+    plt.legend(handles=[red_patch, blue_patch, green_patch])
+    
+    
+
+    plt.xlabel(xname, fontsize = 10)
+    plt.ylabel(yname, fontsize= 10)
+    plt.title(title, fontsize= 12)
+    #ax.legend(loc='best')
+    #filename = 'newplots4'
+    plt.show()   
+    
 def printToFile(list1, inter):
     
     list2 = []
@@ -756,6 +861,7 @@ def printToFile(list1, inter):
         out = '[intercept, ' + str(round(inter,2)) + ']'
         outputwriter.writerow([out])
     file.close()
+    
 ############################# READ TRAINING DATA #############################
 training = []
 #read target of training data 
@@ -816,130 +922,119 @@ targetlog = logFunction(target)
 #normalize data using zscores
 #round the number to 3 decimal place
 #trans = matrixTranspose(training)
-newTraining = []
+#newTraining = transform(training)
  
-for i in training:  
-    item2 = boxcox(i)
-    [item] = preprocessing.normalize([item2])
-    newTraining.append(item)
-
 
 #training2 = matrixTranspose(newTraining)
 
 #remove unuseful data
-training3, names2 = removeData(newTraining, names)
+#training3, names2 = transform(training, names)
 
 
 training4 = []
-targetlog2 = []
-
-for i in range(len(utarget)):
-    #if (float(utarget[i]) <= -3.0):
-    #if (float(utarget[i]) <= -2.0 and float(utarget[i]) > -3.0):
-    if(float(utarget[i]) > -2):
-        training4.append(training3[i])
-        targetlog2.append(targetlog[i])
-
-
-PredictedM12 = findSubset(training4, targetlog2, names2, 0.002) 
-
-training4 = []
-targetlog3 = []
-
-for i in range(len(utarget)):
-    #if (float(utarget[i]) <= -3.0):
-    if (float(utarget[i]) <= -2.0 and float(utarget[i]) > -3.0):
-    #if(float(utarget[i]) > -2):
-        training4.append(training3[i])
-        targetlog3.append(targetlog[i])
-        
-        
-PredictedM23 = findSubset(training4, targetlog3, names2, 0.00414) 
-
-training4 = []
+training5 = []
+training6 = []
 targetlog4 = []
+targetlog5 = []
+targetlog6 = []
 
 for i in range(len(utarget)):
     if (float(utarget[i]) <= -3.0):
-    #if (float(utarget[i]) <= -2.0 and float(utarget[i]) > -3.0):
-    #if(float(utarget[i]) > -2):
-        training4.append(training3[i])
+        training6.append(training[i])
+        targetlog6.append(targetlog[i])
+    if (float(utarget[i]) <= -2.0 and float(utarget[i]) > -3.0):
+        training5.append(training[i])
+        targetlog5.append(targetlog[i])
+    if(float(utarget[i]) > -2.0):
+        training4.append(training[i])
         targetlog4.append(targetlog[i])
-        
-PredictedM34 = findSubset(training4, targetlog4, names2, 0.003) 
 
-        
-predictedU = findSubset(training3, utarget, names2, 0.004)
-#list5 = findSubset(training3, targetlog, names2, 0.0008) 
 
-#print(len(list1))
-#print(len(list2))
-#print(len(list3))
-#print(len(list4))
-#print(len(list5))
-#print(len(targetlog))
-#print(len(targetlog2))
-#print(len(targetlog3))
-#print(len(targetlog4))
+listU = ['Mg7(9)/Mg4', 'Na6(8)/Na3', 'Fe13/Fe6(1.01)', 'Na6(14)/Na4(6)', 'Na6(14)/Na4(9)']
+trainingU = indpData(training,names,listU)
+trainingUT,_ = transform(trainingU,names)
+modelU, euw = trainModel(trainingUT, utarget, listU, 0.00001) 
+cross_validation(5,trainingUT,utarget,0.00001)
+
+
+
+plotactualvspredicted(utarget, euw, targetlog, 'Actual Ionization Parameter', '1.18 [Mg7(9)/Mg4] +0.54 [Na6(8)/Na3] +2.29 [Fe13/Fe6(1.01)] \n -2.20 [Na6(14)/Na4(6)] +0.81 [Na6(14)/Na4(9)] -2.68', 'Actual Ionization Parameter vs. Lasso Predicted Ionization Parameter') 
+
+
+list12 = ['Mg7(9)/Mg4', 'Na6(8)/Na3', 'Fe13/Fe6(1.01)', 'Na6(14)/Na4(6)', 'Na6(14)/Na4(9)']
+training12 = indpData(training4,names,list12)
+training12T,_ = transform(training12,names)
+model12, e12w = trainModel(training12T, targetlog4, list12, 0.00001) 
+cross_validation(5,training12T,targetlog4,0.00001)
+
+
+plotactualvspredicted(targetlog4, e12w, targetlog4, 'Log(Actual AGN Mass)', '-3.54 [Mg7(9)/Mg4] +7.43 [Na6(8)/Na3] -19.98 [Fe13/Fe6(1.01)]  \n +8.84 [Na6(14)/Na4(6)] -2.62 [Na6(14)/Na4(9)] +18.08', 'Log(Actual AGN Mass) vs. Log(Lasso Regression Prediction) -1 >= U > -2') 
+
+
+list23 = ['Mg7(9)/Mg4', 'Na6(8)/Na3', 'Fe13/Fe6(1.01)', 'Na6(14)/Na4(6)', 'Na6(14)/Na4(9)']
+training23 = indpData(training5,names,list23)
+training23T,_ = transform(training23,names)
+
+model23, e23w = trainModel(training23T, targetlog5, list23, 0.00001) 
+#cross_validation(5,training23T,targetlog5,0.00001)
+plotactualvspredicted(targetlog5, e23w, targetlog5, 'Log(Actual AGN Mass)', '2.42 [Mg7(9)/Mg4] -7.20 [Na6(8)/Na3] +16.44 [Fe13/Fe6(1.01)] \n -47.29 [Na6(14)/Na4(6)] +25.30 [Na6(14)/Na4(9)] +14.31' , 'Log(Actual AGN Mass) vs. Log(Lasso Regression Prediction) -2 >= U > -3') 
+
+
+list34 = ['Mg7(9)/Mg4', 'Na6(8)/Na3', 'Fe13/Fe6(1.01)', 'Na6(14)/Na4(6)', 'Na6(14)/Na4(9)']
+training34 = indpData(training6,names,list34)
+training34T,_ = transform(training34,names)
+
+model34, e34w = trainModel(training34T, targetlog6, list34, 0.00001)
+#cross_validation(5,training34T,targetlog6,0.00001)
+plotactualvspredicted(targetlog6, e34w, targetlog6, 'Log(Actual AGN Mass)', '-27.76 [Mg7(9)/Mg4] -24.84 [Na6(8)/Na3] +50.51 [Fe13/Fe6(1.01)] \n -104.66 [Na6(14)/Na4(6)] -6.97 [Na6(14)/Na4(9)] -47.33', 'Log(Actual AGN Mass) vs. Log(Lasso Regression Prediction) -3 >= U > -4') 
+
 
 predictedMass = []
 actualTarget = []
 
-for i in range(len(PredictedM12)):
-    predictedMass.append(PredictedM12[i])
-    actualTarget.append(targetlog2[i])
-    
-for i in range(len(PredictedM23)):
-    predictedMass.append(PredictedM23[i])
-    actualTarget.append(targetlog3[i])
-
-for i in range(len(PredictedM34)):
-    predictedMass.append(PredictedM34[i])
+for i in range(len(e12w)):
+    predictedMass.append(e12w[i])
     actualTarget.append(targetlog4[i])
-
-#heatMapSingle(list1,list2,utarget,'Lasso Predicated Log(Mass of AGN)', 'Lasso Predicted Ionization Parameter', 'Actual Ionization Parameter',  'randoms')
-#heatMapSingle(list1,list2,targetlog,'Lasso Predicated Log(Mass of AGN)', 'Lasso Predicted Ionization Parameter', 'Actual Log(Mass of AGN)',  'randoms')
-
-#scatterMap(predictedMass,predictedU,utarget,'Lasso Predicated Log(Mass of AGN)', 'Lasso Predicted Ionization Parameter', 'Actual Ionization Parameter',  'randoms')
-#scatterMap(predictedMass,predictedU,actualTarget,'Lasso Predicated Log(Mass of AGN)', 'Lasso Predicted Ionization Parameter', 'Actual Log(Mass of AGN)',  'randoms')
-
-#for i in predictedU:
- #   if (float(i) > -3.5 and float(i) < -3.0):
-  #      print(i)
-#list1 = findSubset(training3, targetlog, names2)
-#list1 = findSubset(training4, targetlog2, names2)  
-
-
-#sort list1
-#for i in list1:
- #   i[1] = abs(i[1])
     
-#list1.sort(key=lambda x: x[1], reverse =True)
+for i in range(len(e23w)):
+    predictedMass.append(e23w[i])
+    actualTarget.append(targetlog5[i])
 
-#raining4 = matrixTranspose(training)
-
-
-#print(list1)
-
-#x = []
-#xname = list1[3][0]
-
-#for i in range(len(names)):
-#    if (names[i] == xname):
- #       x = training4[i]
-   
-#plotInst2(targetlog, x, 'Log(Mass of AGN)', xname,'newplots4')
-
+for i in range(len(e34w)):
+    predictedMass.append(e34w[i])
+    actualTarget.append(targetlog6[i])
     
-#plotInst(x, y,xname,yname,targetlog,'newplots4')
-#print(names[16])
-#for i in range(15, len(training4)):
-#    for j in range(len(training4)):
-#        plotInst(training4[i], training4[j],targetlog,names[i],names[j])
+xname = 'Diagnostic I'
+yname = 'Diagnostic II'
+#xname = '-1>=U>-2, -3.54[Mg7(9)/Mg4]+7.43[Na6(8)/Na3]-19.98[Fe13/Fe6(1.01)]+8.84[Na6(14)/Na4(6)]-2.62[Na6(14)/Na4(9)]+18.08 \n -2>=U>-3, 2.42[Mg7(9)/Mg4]-7.20 [Na6(8)/Na3]+16.44 [Fe13/Fe6(1.01)]-47.29[Na6(14)/Na4(6)]+25.30[Na6(14)/Na4(9)]+14.31\n-3>=U>-4,-27.76[Mg7(9)/Mg4]-24.84[Na6(8)/Na3]+50.51[Fe13/Fe6(1.01)]-104.66[Na6(14)/Na4(6)]-6.97[Na6(14)/Na4(9)]-47.33'
+#yname = '1.18 [Mg7(9)/Mg4] +0.54 [Na6(8)/Na3] +2.29 [Fe13/Fe6(1.01)] \n -2.20 [Na6(14)/Na4(6)] +0.81 [Na6(14)/Na4(9)] -2.68'
+scatterMap(predictedMass,euw,utarget,xname, yname, 'Ionization Parameter',  'randoms')
+scatterMap(predictedMass,euw,actualTarget,xname, yname, 'Log(Mass of AGN)',  'randoms')
 
-       
-#heatMap(targetlog,utarget,training,'Log(Mass)','U',names,'randoms')
+#predictM23, e23 = trainModel(training5, targetlog5, names2, 0.00414) 
+#predictM34, e34 = trainModel(training6, targetlog6, names2, 0.003) 
 
-#plotInst2(targetlog, x, 'Log(Mass of AGN)', xname,'newplots4')
+#e12 = matrixTranspose(e12w)[0]
+#e23 = matrixTranspose(e23)[0]
+#e34 = matrixTranspose(e34)[0]
 
-#cross_validation(5,training4,targetlog2)
+#training, names, set 
+#training12 = indpData(training,names,e12)
+
+#transform data
+#training12T, _ = transform(training12,names)
+
+#training12TU = []
+#training23TU = []
+#training34TU = []
+#get training data
+#for i in range(len(utarget)):
+   # if (float(utarget[i]) <= -3.0):
+    #    training6.append(training3[i])
+    #if (float(utarget[i]) <= -2.0 and float(utarget[i]) > -3.0):
+     #   training5.append(training3[i])
+    #if(float(utarget[i]) > -2):
+    #    training12TU.append(training12T[i])
+
+#test
+#testingModel(training12TU, targetlog4, model12)
