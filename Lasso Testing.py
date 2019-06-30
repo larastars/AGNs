@@ -727,14 +727,15 @@ def heatMapSingle(x,y,z,xname,yname,zname,filename):
 def scatterMap(x,y,z,xname,yname,zname,filename):
     fig, ax = plt.subplots(figsize=(10,10))
 
-    plt.title(zname, fontsize=13)
-    plt.xlabel(xname, fontsize=10)
-    plt.ylabel(yname, fontsize=10)
+    marker_size=17
+    plt.title(zname, fontsize=20)
+    plt.xlabel(xname, fontsize=marker_size)
+    plt.ylabel(yname, fontsize=marker_size)
     
-    marker_size=15
+    marker_size=17
     plt.scatter(x, y, marker_size, c=z)
     cbar= plt.colorbar()
-    cbar.set_label(zname, labelpad=+1)
+    cbar.set_label(zname, labelpad=+1,fontsize=marker_size)
     plt.show()
     
     fileName = filename + '/' + 'scatter2 ' + (zname).replace('/','').replace('1.01','1')
