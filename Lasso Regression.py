@@ -148,9 +148,10 @@ def cross_validation(k,training,target):
     #split
     x_train, x_test, y_train, y_test = train_test_split(training, target, test_size= fold, random_state=0)
     
-    lasso = Lasso(alpha=0.000001, max_iter =46000)
+    lasso = Lasso(alpha=0.003, max_iter =46000)
     lasso.fit(x_train,y_train)
-    
+    print('# of coeff = ', np.sum(lasso.coef_ !=0))
+
     #test
     y_score = lasso.predict(x_test)
     
