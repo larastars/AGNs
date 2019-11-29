@@ -24,6 +24,31 @@ warnings.filterwarnings('always')
 warnings.filterwarnings('ignore')
 
 
+def intersection(lst1, lst2): 
+    lst3 = [value for value in lst1 if value in lst2] 
+    return lst3 
+
+def removeData(training, names, removeList):
+    training2 = matrixTranspose(training)
+    
+    training3 = []
+    names2 = []
+    indexList = []
+    
+    for i in removeList:
+        #find the index of 
+        index = names.index(i)
+        indexList.append(index)
+        
+    for i in range(len(training2)): 
+        if (i not in indexList):
+            training3.append(training2[i])
+            names2.append(names[i])
+    
+    training4 = matrixTranspose(training3)
+    
+    return training4, names2
+
 #convert to log function 
 def logFunction(list):
     list2 = toFloat(list)
@@ -74,7 +99,7 @@ def toFloat(list):
     return list2
 
 
-def sort(a,b,c,d,e,f,g):
+def sort(a,b,c,d,e,f,g,h):
     index = []
     curr = []
     for i in a:
@@ -85,7 +110,7 @@ def sort(a,b,c,d,e,f,g):
     
     #count the indicies 
     for i in range(len(a)):
-        ele = a.index(curr[i]) + b.index(curr[i])  + c.index(curr[i]) + d.index(curr[i]) + e.index(curr[i]) + f.index(curr[i]) + g.index(curr[i])
+        ele = a.index(curr[i]) + b.index(curr[i])  + c.index(curr[i]) + d.index(curr[i]) + e.index(curr[i]) + f.index(curr[i]) + g.index(curr[i])+ h.index(curr[i])
         index.append(ele)
         
     #sort curr based on index, from low to high
@@ -171,33 +196,69 @@ ntarget = []
 nhtarget = []
 agntarget = [] 
 rtarget = []
-redshift = []
+#redshift = []
 
 #open a new file  and store the data in a list 
-file_reader = open('colorgridoutput6.csv', "r")
+file_reader = open('combinedFileV4.csv', "r")
 read = csv.reader(file_reader)
 for row in read:
     if(row[3] != ''):
         #adding the information to a list 
         try: 
-            ztarget.append(float(row[0]))
-            utarget.append(float(row[1]))
-            nhtarget.append(float(row[2]))
-            ntarget.append(float(row[3]))
-            rtarget.append(float(row[4]))
-            agntarget.append(float(row[5]))
-            redshift.append(float(row[6]))
-            training.append(row[15:])
+            agntarget.append(float(row[0]))
+            ztarget.append(float(row[1]))
+            ntarget.append(float(row[2]))
+            rtarget.append(float(row[3]))
+            nhtarget.append(float(row[4]))
+            utarget.append(float(row[5]))
+            #redshift.append(float(row[6]))
+            training.append(row[6:])
         except:
-            names.append(row[15:])
+            names.append(row[6:])
         
 file_reader.close()   
 
 [names2] = names
 
-trainingTrans = matrixTranspose(training)
+#remove optical lines
+opticalList = ['H1_4861.36A','O3_5007.00A','H1_6562.85A','N2_6584.00A','O1_6300.00A','S2_6720.00A','NE5_3345.99A','NE5_3426.03A','FE11_7891.87A','S12_7610.59A','FE7_5720.71A','FE7_5720.22A','FE7_6086.97A']
+opticalInter = intersection(opticalList,names2)
+trainingRem, namesRem = removeData(training,names2,opticalInter)
 
 
+#find u subset 
+trainingResult2 = []
+agntarget2 = []
+ztarget2 = []
+utarget2 = []
+nhtarget2 = []
+ntarget2 = []
+rtarget2 = []
+#redshift2 = []
+
+for i in range(len(utarget)):
+    
+    #restricting the U value 
+    if (float(utarget[i]) <= 0.01 and float(utarget[i]) >= 0.001):
+     
+        #if (float(redshift[i]) == 0): 
+           # if(float(ntarget[i]) == 300):
+                #if (float(ztarget[i]) == 1.0):
+                 #   if (float(nhtarget[i]) == 21): #**
+                      
+                    #nhtarget[i] == 21 and rtarget[i] == 21.291
+                            trainingResult2.append(trainingRem[i])
+                            agntarget2.append(agntarget[i])
+                            ztarget2.append(ztarget[i])
+                            utarget2.append(utarget[i])
+                            nhtarget2.append(nhtarget[i])
+                            ntarget2.append(ntarget[i])
+                            rtarget2.append(rtarget[i])
+                         #   redshift2.append(redshift[i])
+
+trainingTrans = matrixTranspose(trainingResult2)
+
+"""
 #select a list of 0% agn = 0 but 10% !=0
 agn_activity_index = []   
 for i in range(len(trainingTrans)):
@@ -207,9 +268,20 @@ for i in range(len(trainingTrans)):
             flag = False
     if (flag):
         agn_activity_index.append(i)
+"""
+#select a list of 0% agn != 0 
+agn_activity_index = []   
+for i in range(len(trainingTrans)):
+    flag = False
+    for j in range(len(trainingTrans[i])):
+        if (float(trainingTrans[i][j]) != 0 and float(agntarget2[j]) == 0):
+            flag = True
+    if (flag):
+        agn_activity_index.append(i)
 
 
-#find brightest agn 
+#find brightest agn
+agn0 = []
 agn5 = []
 agn10 = []
 agn20 = []
@@ -221,6 +293,7 @@ agn100 = []
 
 #rank based on the brightest 
 for i in agn_activity_index: 
+    sumVar0 = 0.0
     sumVar5 = 0.0
     sumVar10 = 0.0
     sumVar20 = 0.0
@@ -230,21 +303,24 @@ for i in agn_activity_index:
     sumVar100 = 0.0
     
     for j in range(len(trainingTrans[i])):
-        if (float(agntarget[j]) == 5):
+        if (float(agntarget2[j]) == 0):
+            sumVar0 = sumVar0 + float(trainingTrans[i][j])
+        elif (float(agntarget2[j]) == 5):
             sumVar5 = sumVar5 + float(trainingTrans[i][j])
-        elif (float(agntarget[j]) == 10):
+        elif (float(agntarget2[j]) == 10):
             sumVar10 = sumVar10 + float(trainingTrans[i][j])
-        elif (float(agntarget[j]) == 20):
+        elif (float(agntarget2[j]) == 20):
             sumVar20 = sumVar20 + float(trainingTrans[i][j])  
-        elif (float(agntarget[j]) == 40):
+        elif (float(agntarget2[j]) == 40):
             sumVar40 = sumVar40 + float(trainingTrans[i][j])  
-        elif (float(agntarget[j]) == 60):
+        elif (float(agntarget2[j]) == 60):
             sumVar60 = sumVar60 + float(trainingTrans[i][j])
-        elif (float(agntarget[j]) == 80):
+        elif (float(agntarget2[j]) == 80):
             sumVar80 = sumVar80 + float(trainingTrans[i][j])
-        elif (float(agntarget[j]) == 100):
+        elif (float(agntarget2[j]) == 100):
             sumVar100 = sumVar100 + float(trainingTrans[i][j])
-     
+            
+    agn0.append(sumVar0)
     agn5.append(sumVar5)
     agn10.append(sumVar10)
     agn20.append(sumVar20)
@@ -254,7 +330,8 @@ for i in agn_activity_index:
     agn100.append(sumVar100)
             
     
-#sorted indecies based on the agn    
+#sorted indecies based on the agn   
+agn0 = sorted(agn_activity_index, key = lambda x: agn0[agn_activity_index.index(x)], reverse=True) 
 agn5 = sorted(agn_activity_index, key = lambda x: agn5[agn_activity_index.index(x)], reverse=True) 
 agn10 = sorted(agn_activity_index, key = lambda x: agn10[agn_activity_index.index(x)], reverse=True) 
 agn20 = sorted(agn_activity_index, key = lambda x: agn20[agn_activity_index.index(x)], reverse=True) 
@@ -265,137 +342,79 @@ agn100 = sorted(agn_activity_index, key = lambda x: agn100[agn_activity_index.in
 
 
 #ranking from the birghtest to dimest 
-result = sort(agn5,agn10,agn20,agn40,agn60,agn80,agn100)
+result = sort(agn0,agn5,agn10,agn20,agn40,agn60,agn80,agn100)
 
 namesFinal = []
 for i in result:
-    namesFinal.append(names2[i])
+    namesFinal.append(namesRem[i])
 #create the title header 
 titles = ['agn%', 'U','Z','NH','N','R','redshift']
 for i in result:
-    titles.append(names2[i])
-            
+    titles.append(namesRem[i])
+print("ranking from brightest to dimmest")
+print(namesFinal)           
   
 trainingSet = []
 #trans 
 for i in result:
     trainingSet.append(toString(trainingTrans[i]))
 
+trainingResult3 = matrixTranspose(trainingSet)
 
-#actual     
-trainingResult = matrixTranspose(trainingSet)
-
-#find u subset
-trainingResult2 = []
-agntarget2 = []
-ztarget2 = []
-utarget2 = []
-nhtarget2 = []
-ntarget2 = []
-rtarget2 = []
-redshift2 = []
-
-for i in range(len(utarget)):
-    if (float(utarget[i]) <= 0.01 and float(utarget[i]) >= 0.001):
-        trainingResult2.append(trainingResult[i])
-        agntarget2.append(agntarget[i])
-        ztarget2.append(ztarget[i])
-        utarget2.append(utarget[i])
-        nhtarget2.append(nhtarget[i])
-        ntarget2.append(ntarget[i])
-        rtarget2.append(rtarget[i])
-        redshift2.append(redshift[i])
-        
         
 #write to file
-with open('subset2.csv', mode='w') as file:
+with open('subset4.csv', mode='w') as file:
         outputwriter = csv.writer(file, delimiter=',')
-       
         outputwriter.writerow(titles)
        
         for i in range(len(ztarget2)):
-            curr = [str(agntarget2[i]),str(utarget2[i]),str(ztarget2[i]), str(nhtarget2[i]), str(ntarget2[i]), str(rtarget2[i]), str(redshift2[i])]
-            for j in range(len(trainingResult2[0])):
-                curr.append(str(trainingResult2[i][j]))
+            curr = [str(agntarget2[i]),str(utarget2[i]),str(ztarget2[i]), str(nhtarget2[i]), str(ntarget2[i]), str(rtarget2[i])]
+            for j in range(len(trainingResult3[0])):
+                curr.append(str(trainingResult3[i][j]))
                 
             outputwriter.writerow(curr)
                                      
 file.close()
 
 
-######################### CORRELATION ########################
-"""
-data = pd.read_csv("subset1.csv")
-
-#get correlations of each features in dataset
-corr = data.corr()
-print(corr)
-top_corr_features = corr.index
-#plt.figure(figsize=(40,40))
-#plot heat map
-#g=sns.heatmap(data[top_corr_features].corr(),annot=True,cmap="RdYlGn")
-fig = plt.figure(figsize=(40,40))
-ax = fig.add_subplot(111)
-cax = ax.matshow(corr,cmap='coolwarm', vmin=-1, vmax=1)
-fig.colorbar(cax)
-ticks = np.arange(0,len(data.columns),1)
-ax.set_xticks(ticks)
-plt.xticks(rotation=90)
-ax.set_yticks(ticks)
-ax.set_xticklabels(data.columns)
-ax.set_yticklabels(data.columns)
-plt.show()
+    
 
 
 ######################### LASSO ########################
-#apply lasso regression on agn%, Z, U, NH, N, R 
-#preprocess the data 
+#convert to float 
+for i in range(len(trainingResult3)):
+    for j in range(len(trainingResult3[0])):
+        trainingResult3[i][j] = float(trainingResult3[i][j]) 
+        
 
-#normalize data using zscores
-#round the number to 3 decimal place
-
-for i in range(len(trainingSet)):
-    for j in range(len(trainingSet[0])):
-        trainingSet[i][j] = float( trainingSet[i][j])
  
-newTraining = []
-for i in trainingSet:  
-    item2 = boxcox(i)
-    [item] = preprocessing.normalize([item2])
-    newTraining.append(item)
+print('')
+print("consider the top 25")
+cut = 50
+trainingResultTrans = matrixTranspose(trainingResult3)
 
-finalData = matrixTranspose(newTraining)
-cross_validation(5, finalData, logFunction(agntarget), namesFinal) #664.87
-"""
-######################### LASSO ########################
+#trans 
+trainingResult4 = matrixTranspose(trainingResultTrans)
 
-for i in range(len(trainingResult2)):
-    for j in range(len(trainingResult2[0])):
-        trainingResult2[i][j] = float(trainingResult2[i][j]) 
- 
-cut = 25
-trainingResultTrans = matrixTranspose(trainingResult2)
-trainingResultTrans  = trainingResultTrans[:cut]
-trainingResult3 = matrixTranspose(trainingResultTrans)
- 
-namesFinal = namesFinal[:cut]
-#lassoReg(trainingResult,agntarget,namesFinal)
+print('')
+
 #larger the # -> less variables 
-agn = cross_validation(5,trainingResult3,agntarget2,namesFinal,0.001)
-u = cross_validation(5,trainingResult3,utarget2,namesFinal,0.00001)
-z = cross_validation(5,trainingResult3,ztarget2,namesFinal,0.0005)
-r = cross_validation(5,trainingResult3,rtarget2,namesFinal,0.00009)
-n = cross_validation(5,trainingResult3,ntarget2,namesFinal,0.2)
-nh = cross_validation(5,trainingResult3,nhtarget2,namesFinal,0.005)
+print('agn')
+agn = cross_validation(5,trainingResult4,agntarget2,namesFinal,0.00005)
+print('u')
+u = cross_validation(5,trainingResult4,utarget2,namesFinal,0.000001)
+print('z')
+z = cross_validation(5,trainingResult4,ztarget2,namesFinal,0.00001)
+print('r')
+r = cross_validation(5,trainingResult4,rtarget2,namesFinal,0.0001)
+print('n')
+n = cross_validation(5,trainingResult4,ntarget2,namesFinal,0.09)
+print('nh')
+nh = cross_validation(5,trainingResult4,nhtarget2,namesFinal,0.0001)
 
 totalList = u + z +r + n + nh
 output = set(agn) - set(totalList)
-print('total output:')
+print('Using top 25, select the ones that are most sensetive to AGN but least sensetive to other parameters using LASSO Regression')
 print(output)
-
-
-
-
-
 
 
